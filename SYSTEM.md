@@ -35,4 +35,4 @@ Keep observable business logic in `Sources/CodexAgentMonitorCore/` and keep macO
 
 Preserve the observe-only boundary unless the user explicitly asks for a future control/enforcement extension. If enforcement is added later, it must be opt-in, documented, and isolated behind a clear integration protocol.
 
-Run `./script/run_tests.sh` after meaningful changes. The local Command Line Tools environment cannot import XCTest/Testing, so verification currently uses `CodexAgentMonitorTestRunner`.
+Run `./script/run_tests.sh` after meaningful changes. This includes the orchestrated E2E simulation and must pass before completion. The local Command Line Tools environment cannot import XCTest/Testing, so verification currently uses `CodexAgentMonitorTestRunner`.

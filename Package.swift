@@ -10,6 +10,7 @@ let package = Package(
     products: [
         .executable(name: "CodexAgentMonitor", targets: ["CodexAgentMonitor"]),
         .executable(name: "CodexAgentMonitorTestRunner", targets: ["CodexAgentMonitorTestRunner"]),
+        .executable(name: "CodexAgentMonitorE2ERunner", targets: ["CodexAgentMonitorE2ERunner"]),
         .library(name: "CodexAgentMonitorCore", targets: ["CodexAgentMonitorCore"])
     ],
     targets: [
@@ -20,6 +21,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "CodexAgentMonitorTestRunner",
+            dependencies: ["CodexAgentMonitorCore"]
+        ),
+        .executableTarget(
+            name: "CodexAgentMonitorE2ERunner",
             dependencies: ["CodexAgentMonitorCore"]
         )
     ],

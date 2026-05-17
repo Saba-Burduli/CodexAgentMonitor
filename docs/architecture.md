@@ -6,7 +6,8 @@ CodexAgentMonitor is intentionally split into a UI shell and a testable observab
 
 - `CodexAgentMonitor`: SwiftUI macOS executable. Owns `MenuBarExtra`, settings, polling, and local filesystem access.
 - `CodexAgentMonitorCore`: models, event decoding, state reducer, demo telemetry, and health rules.
-- `CodexAgentMonitorCoreTests`: deterministic tests for lifecycle, usage, permission, and event-codec behavior.
+- `CodexAgentMonitorTestRunner`: executable core checks for lifecycle, usage, permission, and event-codec behavior.
+- `CodexAgentMonitorE2ERunner`: orchestrated simulation with an Orchestrator Agent and Tester Agent.
 
 ## Observability Boundary
 
@@ -28,6 +29,10 @@ Future integrations should write events into the JSONL file or expose an equival
 3. `EventCodec` decodes valid lines and skips malformed lines.
 4. `MonitorState.apply(_:)` reduces events into current agents, usage, permissions, diagnostics, and health.
 5. SwiftUI renders the latest state in the menu bar.
+
+## Orchestrated Self-Test
+
+`CodexAgentMonitorE2ERunner` runs a simulated Tester Agent through an Orchestrator Agent. The tester emits structured lifecycle, rapid update, completion, error, usage, and permission events. The orchestrator applies every event to `MonitorState`, writes `~/.codex-agent-monitor/events.jsonl`, verifies replayability after each event, and logs state snapshots to `logs/e2e-validation.log`.
 
 ## Health Rules
 

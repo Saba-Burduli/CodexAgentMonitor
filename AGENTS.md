@@ -7,6 +7,7 @@ CodexAgentMonitor is a SwiftPM macOS menu-bar app.
 - `Sources/CodexAgentMonitor/`: SwiftUI/AppKit menu-bar UI and local polling service.
 - `Sources/CodexAgentMonitorCore/`: observable domain models, event decoding, reducer, health rules.
 - `Sources/CodexAgentMonitorTestRunner/`: executable verification runner for event ingestion and quota/health behavior.
+- `Sources/CodexAgentMonitorE2ERunner/`: orchestrated self-test runner with simulated orchestrator and tester agents.
 - `docs/`: architecture and integration notes.
 - `script/`: local build and verification helpers.
 
@@ -16,7 +17,7 @@ Keep business rules in `CodexAgentMonitorCore`. Keep macOS UI and filesystem pol
 
 - `swift build`: build all targets.
 - `swift run CodexAgentMonitorTestRunner`: run core verification tests without XCTest.
-- `./script/run_tests.sh`: run the local verification suite.
+- `./script/run_tests.sh`: run build, core verification, and orchestrated E2E simulation.
 - `swift run CodexAgentMonitor`: launch the menu-bar app from the agent PTY.
 
 ## Engineering Notes

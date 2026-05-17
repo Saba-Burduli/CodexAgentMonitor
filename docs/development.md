@@ -5,6 +5,8 @@
 ```sh
 swift build
 ./script/run_tests.sh
+swift run CodexAgentMonitorTestRunner
+swift run CodexAgentMonitorE2ERunner
 swift run CodexAgentMonitor
 ```
 

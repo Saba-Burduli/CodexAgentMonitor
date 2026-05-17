@@ -3,7 +3,10 @@ import Foundation
 public enum MonitorEvent: Equatable, Sendable {
     case agentStarted(AgentTelemetry)
     case agentUpdated(AgentTelemetry)
+    case agentStatusUpdate(AgentTelemetry)
     case agentFinished(agentId: String, status: AgentStatus, updatedAt: Date, activity: String)
+    case agentCompleted(agentId: String, updatedAt: Date, activity: String)
+    case agentError(agentId: String, updatedAt: Date, activity: String)
     case tokenUsageUpdated(UsageMetrics)
     case permissionWarningTriggered(PermissionScope)
 }
@@ -23,7 +26,10 @@ extension MonitorEvent: Codable {
     private enum EventType: String, Codable {
         case agentStarted = "agent_started"
         case agentUpdated = "agent_updated"
+        case agentStatusUpdate = "agent_status_update"
         case agentFinished = "agent_finished"
+        case agentCompleted = "agent_completed"
+        case agentError = "agent_error"
         case tokenUsageUpdated = "token_usage_updated"
         case permissionWarningTriggered = "permission_warning_triggered"
     }
@@ -37,12 +43,26 @@ extension MonitorEvent: Codable {
             self = .agentStarted(try container.decode(AgentTelemetry.self, forKey: .agent))
         case .agentUpdated:
             self = .agentUpdated(try container.decode(AgentTelemetry.self, forKey: .agent))
+        case .agentStatusUpdate:
+            self = .agentStatusUpdate(try container.decode(AgentTelemetry.self, forKey: .agent))
         case .agentFinished:
             self = .agentFinished(
                 agentId: try container.decode(String.self, forKey: .agentId),
                 status: try container.decode(AgentStatus.self, forKey: .status),
                 updatedAt: try container.decode(Date.self, forKey: .updatedAt),
                 activity: try container.decodeIfPresent(String.self, forKey: .activity) ?? "Finished"
+            )
+        case .agentCompleted:
+            self = .agentCompleted(
+                agentId: try container.decode(String.self, forKey: .agentId),
+                updatedAt: try container.decode(Date.self, forKey: .updatedAt),
+                activity: try container.decodeIfPresent(String.self, forKey: .activity) ?? "Completed"
+            )
+        case .agentError:
+            self = .agentError(
+                agentId: try container.decode(String.self, forKey: .agentId),
+                updatedAt: try container.decode(Date.self, forKey: .updatedAt),
+                activity: try container.decodeIfPresent(String.self, forKey: .activity) ?? "Error"
             )
         case .tokenUsageUpdated:
             self = .tokenUsageUpdated(try container.decode(UsageMetrics.self, forKey: .usage))
@@ -61,10 +81,23 @@ extension MonitorEvent: Codable {
         case .agentUpdated(let agent):
             try container.encode(EventType.agentUpdated, forKey: .type)
             try container.encode(agent, forKey: .agent)
+        case .agentStatusUpdate(let agent):
+            try container.encode(EventType.agentStatusUpdate, forKey: .type)
+            try container.encode(agent, forKey: .agent)
         case .agentFinished(let agentId, let status, let updatedAt, let activity):
             try container.encode(EventType.agentFinished, forKey: .type)
             try container.encode(agentId, forKey: .agentId)
             try container.encode(status, forKey: .status)
+            try container.encode(updatedAt, forKey: .updatedAt)
+            try container.encode(activity, forKey: .activity)
+        case .agentCompleted(let agentId, let updatedAt, let activity):
+            try container.encode(EventType.agentCompleted, forKey: .type)
+            try container.encode(agentId, forKey: .agentId)
+            try container.encode(updatedAt, forKey: .updatedAt)
+            try container.encode(activity, forKey: .activity)
+        case .agentError(let agentId, let updatedAt, let activity):
+            try container.encode(EventType.agentError, forKey: .type)
+            try container.encode(agentId, forKey: .agentId)
             try container.encode(updatedAt, forKey: .updatedAt)
             try container.encode(activity, forKey: .activity)
         case .tokenUsageUpdated(let usage):

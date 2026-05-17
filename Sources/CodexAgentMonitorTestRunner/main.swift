@@ -8,7 +8,8 @@ struct CodexAgentMonitorTestRunner {
         try testHealthBecomesWarningWhenQuotaIsLow()
         try testHealthBecomesCriticalForPermissionWarning()
         try testJSONLinesDecodeEvents()
-        print("CodexAgentMonitorTestRunner: 4 tests passed")
+        try testStructuredLifecycleAliases()
+        print("CodexAgentMonitorTestRunner: 5 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -78,6 +79,38 @@ struct CodexAgentMonitorTestRunner {
         let decoded = EventCodec.decodeJSONLines("\(line)\nnot-json")
 
         try expect(decoded == [event], "expected JSONL decoder to skip malformed line")
+    }
+
+    private static func testStructuredLifecycleAliases() throws {
+        let start = Date(timeIntervalSince1970: 2_000)
+        var state = MonitorState()
+        state.apply(.agentStarted(AgentTelemetry(
+            id: "tester",
+            name: "Tester",
+            status: .running,
+            currentTask: "Start",
+            startedAt: start,
+            updatedAt: start,
+            activity: "Started"
+        )))
+        state.apply(.agentStatusUpdate(AgentTelemetry(
+            id: "tester",
+            name: "Tester",
+            status: .blocked,
+            currentTask: "Blocked edge case",
+            startedAt: start,
+            updatedAt: start.addingTimeInterval(1),
+            activity: "Waiting"
+        )))
+        state.apply(.agentCompleted(
+            agentId: "tester",
+            updatedAt: start.addingTimeInterval(2),
+            activity: "Completed safely"
+        ))
+
+        try expect(state.agents.count == 1, "expected alias events to update one agent")
+        try expect(state.agents.first?.status == .completed, "expected agent_completed alias to complete agent")
+        try expect(state.activeAgents.isEmpty, "expected completed alias to remove active agent")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {

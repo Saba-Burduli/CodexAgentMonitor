@@ -55,28 +55,15 @@ public struct MonitorState: Equatable, Sendable {
 
     public mutating func apply(_ event: MonitorEvent) {
         switch event {
-        case .agentStarted(let agent), .agentUpdated(let agent):
+        case .agentStarted(let agent), .agentUpdated(let agent), .agentStatusUpdate(let agent):
             upsert(agent)
             lastEventAt = agent.updatedAt
         case .agentFinished(let agentId, let status, let updatedAt, let activity):
-            if let index = agents.firstIndex(where: { $0.id == agentId }) {
-                agents[index].status = status
-                agents[index].updatedAt = updatedAt
-                agents[index].activity = activity
-            } else {
-                agents.append(
-                    AgentTelemetry(
-                        id: agentId,
-                        name: agentId,
-                        status: status,
-                        currentTask: "Unknown finished task",
-                        startedAt: updatedAt,
-                        updatedAt: updatedAt,
-                        activity: activity
-                    )
-                )
-            }
-            lastEventAt = updatedAt
+            applyFinished(agentId: agentId, status: status, updatedAt: updatedAt, activity: activity)
+        case .agentCompleted(let agentId, let updatedAt, let activity):
+            applyFinished(agentId: agentId, status: .completed, updatedAt: updatedAt, activity: activity)
+        case .agentError(let agentId, let updatedAt, let activity):
+            applyFinished(agentId: agentId, status: .error, updatedAt: updatedAt, activity: activity)
         case .tokenUsageUpdated(let metrics):
             usage = metrics
             lastEventAt = metrics.updatedAt
@@ -85,6 +72,32 @@ public struct MonitorState: Equatable, Sendable {
             diagnostics.append(contentsOf: scope.warnings.map { "\(scope.agentId): \($0)" })
             lastEventAt = Date()
         }
+    }
+
+    private mutating func applyFinished(agentId: String, status: AgentStatus, updatedAt: Date, activity: String) {
+        if let index = agents.firstIndex(where: { $0.id == agentId }) {
+            agents[index].status = status
+            agents[index].updatedAt = updatedAt
+            agents[index].activity = activity
+        } else {
+            agents.append(
+                AgentTelemetry(
+                    id: agentId,
+                    name: agentId,
+                    status: status,
+                    currentTask: "Unknown finished task",
+                    startedAt: updatedAt,
+                    updatedAt: updatedAt,
+                    activity: activity
+                )
+            )
+        }
+
+        if status == .error {
+            diagnostics.append("\(agentId): \(activity)")
+        }
+
+        lastEventAt = updatedAt
     }
 
     public mutating func apply(_ events: [MonitorEvent]) {

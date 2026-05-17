@@ -1,5 +1,7 @@
 .DS_Store
 /.build
+/logs/*
+!/logs/.gitkeep
 /Packages
 xcuserdata/
 DerivedData/

@@ -34,7 +34,7 @@ When launched from Codex, the app runs from the agent PTY. The menu-bar item app
 ./script/run_tests.sh
 ```
 
-The current Command Line Tools environment cannot import XCTest/Testing, so the verification suite runs through `CodexAgentMonitorTestRunner`.
+The current Command Line Tools environment cannot import XCTest/Testing, so core checks run through `CodexAgentMonitorTestRunner`. Full validation also runs `CodexAgentMonitorE2ERunner`, which simulates an orchestrator agent and tester agent end to end.
 
 ## Event Log Contract
 
@@ -50,7 +50,10 @@ Supported event types:
 
 - `agent_started`
 - `agent_updated`
+- `agent_status_update`
 - `agent_finished`
+- `agent_completed`
+- `agent_error`
 - `token_usage_updated`
 - `permission_warning_triggered`
 
@@ -60,4 +63,4 @@ Example:
 {"type":"agent_started","agent":{"id":"local-main","name":"Primary Codex","status":"running","currentTask":"Implement feature","startedAt":"2026-05-17T12:00:00Z","updatedAt":"2026-05-17T12:00:10Z","activity":"Reading files"}}
 ```
 
-See [Architecture](docs/architecture.md) for the full model boundary.
+See [Architecture](docs/architecture.md) for the full model boundary. See [End-to-End Testing](docs/e2e-testing.md) for the orchestrated tester-agent simulation.
