@@ -25,3 +25,30 @@ Keep business rules in `CodexAgentMonitorCore`. Keep macOS UI and filesystem pol
 This app is an observability layer only. It reads agent, token, and permission events from a local integration boundary and displays state. Do not add direct agent control, process killing, external command execution, or Codex internals coupling without an explicit integration layer and user approval.
 
 Prefer small, typed models and deterministic tests. Update docs when event contracts or UX behavior change.
+
+## TODO-Driven Git Workflow
+
+Development must proceed as a stream of small, traceable changes.
+
+Loop for every implementation task:
+
+1. Find the next explicit TODO or the next item in `PROJECT_STATUS.md`.
+2. Implement only that TODO or one tightly scoped subtask of it.
+3. Validate locally with the narrowest useful command.
+4. Commit immediately with a clear technical message.
+5. Push immediately before starting the next task.
+
+Commit rules:
+
+- Keep each commit focused on one idea, fix, or feature increment.
+- Avoid mixing unrelated files or multiple TODOs in one commit.
+- Do not accumulate unpushed commits.
+- If push fails, fix the push before continuing development.
+- Use clear messages such as `add agent event dispatcher`, `fix tester agent state sync`, or `implement orchestrator event handler`.
+- Do not use vague messages such as `update code` or `fix stuff`.
+
+Safety rules:
+
+- Do not perform broad refactors unless the current TODO explicitly requires it.
+- Do not batch completed work for later commits.
+- Preserve the observe-only product boundary unless a future TODO explicitly introduces an opt-in integration layer.
