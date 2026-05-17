@@ -59,6 +59,13 @@ Or run only the orchestrated E2E simulation:
 swift run CodexAgentMonitorE2ERunner
 ```
 
+To watch state changes in the menu-bar app while the simulation runs, launch the app in one terminal and run live mode in another:
+
+```sh
+swift run CodexAgentMonitor
+swift run CodexAgentMonitorE2ERunner -- --live
+```
+
 Latest expected success output:
 
 ```text

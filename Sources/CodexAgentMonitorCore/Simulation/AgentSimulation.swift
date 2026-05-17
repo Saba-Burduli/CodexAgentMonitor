@@ -90,15 +90,18 @@ public struct TesterAgent {
     public var id: String
     public var errorAgentId: String
     public var now: Date
+    public var eventDelay: TimeInterval
 
     public init(
         id: String = "tester-agent",
         errorAgentId: String = "tester-agent-error-case",
-        now: Date = Date()
+        now: Date = Date(),
+        eventDelay: TimeInterval = 0
     ) {
         self.id = id
         self.errorAgentId = errorAgentId
         self.now = now
+        self.eventDelay = eventDelay
     }
 
     public func run<Sink: AgentEventSink>(through sink: inout Sink) throws {
@@ -109,51 +112,51 @@ public struct TesterAgent {
     }
 
     private func sendLifecycleEvents<Sink: AgentEventSink>(through sink: inout Sink) throws {
-        try sink.receive(.agentStarted(agent(status: .running, task: "Spawn tester workload", offset: 0, activity: "Tester agent spawned")))
-        try sink.receive(.agentStatusUpdate(agent(status: .running, task: "Prepare fixtures", offset: 1, activity: "Creating synthetic Codex task events")))
-        try sink.receive(.agentStatusUpdate(agent(status: .blocked, task: "Wait for simulated dependency", offset: 2, activity: "Delay edge case: waiting safely")))
-        try sink.receive(.agentStatusUpdate(agent(status: .running, task: "Resume after delay", offset: 3, activity: "Delay cleared, continuing")))
+        try send(.agentStarted(agent(status: .running, task: "Spawn tester workload", offset: 0, activity: "Tester agent spawned")), through: &sink)
+        try send(.agentStatusUpdate(agent(status: .running, task: "Prepare fixtures", offset: 1, activity: "Creating synthetic Codex task events")), through: &sink)
+        try send(.agentStatusUpdate(agent(status: .blocked, task: "Wait for simulated dependency", offset: 2, activity: "Delay edge case: waiting safely")), through: &sink)
+        try send(.agentStatusUpdate(agent(status: .running, task: "Resume after delay", offset: 3, activity: "Delay cleared, continuing")), through: &sink)
     }
 
     private func sendRapidUpdates<Sink: AgentEventSink>(through sink: inout Sink) throws {
         for index in 0..<6 {
-            try sink.receive(.agentStatusUpdate(agent(
+            try send(.agentStatusUpdate(agent(
                 status: .running,
                 task: "Rapid update batch",
                 offset: 4 + TimeInterval(index),
                 activity: "Rapid progress update \(index + 1)/6"
-            )))
+            )), through: &sink)
         }
-        try sink.receive(.agentCompleted(agentId: id, updatedAt: now.addingTimeInterval(11), activity: "Tester workload completed"))
+        try send(.agentCompleted(agentId: id, updatedAt: now.addingTimeInterval(11), activity: "Tester workload completed"), through: &sink)
     }
 
     private func sendUsageAndPermissionEvents<Sink: AgentEventSink>(through sink: inout Sink) throws {
-        try sink.receive(.tokenUsageUpdated(UsageMetrics(
+        try send(.tokenUsageUpdated(UsageMetrics(
             window5h: 40_000,
             window7d: 180_000,
             total: 220_000,
             remaining: 780_000,
             trend: .rising,
             updatedAt: now.addingTimeInterval(12)
-        )))
-        try sink.receive(.tokenUsageUpdated(UsageMetrics(
+        )), through: &sink)
+        try send(.tokenUsageUpdated(UsageMetrics(
             window5h: 98_000,
             window7d: 251_000,
             total: 291_000,
             remaining: 709_000,
             trend: .spiking,
             updatedAt: now.addingTimeInterval(13)
-        )))
-        try sink.receive(.permissionWarningTriggered(PermissionScope(
+        )), through: &sink)
+        try send(.permissionWarningTriggered(PermissionScope(
             agentId: id,
             allowedOperations: ["read_files", "write_event_log", "run_validation"],
             rateLimit: RateLimit(limit: 100, used: 82, window: "1h"),
             warnings: []
-        )))
+        )), through: &sink)
     }
 
     private func sendErrorScenario<Sink: AgentEventSink>(through sink: inout Sink) throws {
-        try sink.receive(.agentStarted(AgentTelemetry(
+        try send(.agentStarted(AgentTelemetry(
             id: errorAgentId,
             name: "Tester Failure Case",
             status: .running,
@@ -161,12 +164,19 @@ public struct TesterAgent {
             startedAt: now.addingTimeInterval(14),
             updatedAt: now.addingTimeInterval(14),
             activity: "Failure scenario started"
-        )))
-        try sink.receive(.agentError(
+        )), through: &sink)
+        try send(.agentError(
             agentId: errorAgentId,
             updatedAt: now.addingTimeInterval(15),
             activity: "Simulated tool failure handled safely"
-        ))
+        ), through: &sink)
+    }
+
+    private func send<Sink: AgentEventSink>(_ event: MonitorEvent, through sink: inout Sink) throws {
+        try sink.receive(event)
+        if eventDelay > 0 {
+            Thread.sleep(forTimeInterval: eventDelay)
+        }
     }
 
     private func agent(status: AgentStatus, task: String, offset: TimeInterval, activity: String) -> AgentTelemetry {
@@ -186,10 +196,11 @@ public enum AgentSimulation {
     public static func run(
         eventLogURL: URL,
         validationLogURL: URL,
-        now: Date = Date()
+        now: Date = Date(),
+        eventDelay: TimeInterval = 0
     ) throws -> ValidationReport {
         var orchestrator = try OrchestratorAgent(eventLogURL: eventLogURL, validationLogURL: validationLogURL)
-        let tester = TesterAgent(now: now)
+        let tester = TesterAgent(now: now, eventDelay: eventDelay)
         try tester.run(through: &orchestrator)
 
         var checksPassed = 0

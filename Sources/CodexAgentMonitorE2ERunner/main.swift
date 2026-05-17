@@ -4,6 +4,7 @@ import Foundation
 @main
 struct CodexAgentMonitorE2ERunner {
     static func main() throws {
+        let isLiveMode = CommandLine.arguments.contains("--live")
         let home = FileManager.default.homeDirectoryForCurrentUser
         let eventLogURL = home
             .appendingPathComponent(".codex-agent-monitor", isDirectory: true)
@@ -12,9 +13,14 @@ struct CodexAgentMonitorE2ERunner {
             .appendingPathComponent("logs", isDirectory: true)
             .appendingPathComponent("e2e-validation.log")
 
-        let report = try AgentSimulation.run(eventLogURL: eventLogURL, validationLogURL: validationLogURL)
+        let report = try AgentSimulation.run(
+            eventLogURL: eventLogURL,
+            validationLogURL: validationLogURL,
+            eventDelay: isLiveMode ? 0.75 : 0
+        )
 
         print("CodexAgentMonitorE2ERunner: passed")
+        print("mode=\(isLiveMode ? "live" : "fast")")
         print("events_processed=\(report.eventsProcessed)")
         print("checks_passed=\(report.checksPassed)")
         print("final_health=\(report.finalState.health.rawValue)")
