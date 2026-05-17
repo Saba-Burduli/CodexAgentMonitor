@@ -5,6 +5,7 @@
 ```sh
 swift build
 ./script/run_tests.sh
+./script/run_ui_smoke.sh
 swift run CodexAgentMonitorTestRunner
 swift run CodexAgentMonitorE2ERunner
 swift run CodexAgentMonitor

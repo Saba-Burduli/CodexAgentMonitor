@@ -32,6 +32,7 @@ When launched from Codex, the app runs from the agent PTY. The menu-bar item app
 
 ```sh
 ./script/run_tests.sh
+./script/run_ui_smoke.sh
 ```
 
 The current Command Line Tools environment cannot import XCTest/Testing, so core checks run through `CodexAgentMonitorTestRunner`. Full validation also runs `CodexAgentMonitorE2ERunner`, which simulates an orchestrator agent and tester agent end to end. Use `swift run CodexAgentMonitorE2ERunner -- --live` to slow the feed down for menu-bar inspection.

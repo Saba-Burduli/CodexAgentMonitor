@@ -18,6 +18,7 @@ Keep business rules in `CodexAgentMonitorCore`. Keep macOS UI and filesystem pol
 - `swift build`: build all targets.
 - `swift run CodexAgentMonitorTestRunner`: run core verification tests without XCTest.
 - `./script/run_tests.sh`: run build, core verification, and orchestrated E2E simulation.
+- `./script/run_ui_smoke.sh`: generate E2E telemetry, launch the menu-bar app, verify the macOS process, and capture a runtime screenshot artifact.
 - `swift run CodexAgentMonitor`: launch the menu-bar app from the agent PTY.
 
 ## Engineering Notes
