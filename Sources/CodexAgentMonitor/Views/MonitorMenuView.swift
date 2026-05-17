@@ -36,6 +36,7 @@ struct MonitorMenuView: View {
             }
         }
         .padding(16)
+        .accessibilityIdentifier("monitor.menu.root")
     }
 }
 
@@ -51,6 +52,7 @@ private struct HeaderView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Codex Agent Monitor")
                     .font(.headline)
+                    .accessibilityIdentifier("monitor.header.title")
                 Text(isDemoMode ? "Demo telemetry, waiting for event log" : "Live event log connected")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -58,6 +60,7 @@ private struct HeaderView: View {
             Spacer()
             Text(health.label)
                 .font(.caption.weight(.semibold))
+                .accessibilityIdentifier("monitor.header.health")
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(color.opacity(0.18), in: Capsule())
@@ -122,6 +125,7 @@ private struct AgentRow: View {
         }
         .padding(10)
         .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityIdentifier("monitor.agent.\(agent.id)")
     }
 }
 
