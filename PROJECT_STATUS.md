@@ -28,6 +28,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Orchestrated E2E simulation via `CodexAgentMonitorE2ERunner` with simulated Orchestrator Agent and Tester Agent.
 - Menu-bar UI smoke runner via `script/run_ui_smoke.sh`.
 - UI smoke checks for expected tester-agent events, final error transition, app process visibility, and screenshot artifact creation.
+- Local HTTP ingest daemon via `CodexAgentMonitorIngestDaemon` for appending posted events to the JSONL feed.
 - Context docs: `AGENTS.md`, `SYSTEM.md`, `PROJECT_STATUS.md`, `README.md`, and `docs/`.
 
 ## Verification
@@ -62,7 +63,7 @@ Runtime smoke completed earlier with `swift run CodexAgentMonitor`; the app proc
 
 ## Next Priorities
 
-1. Add an optional local daemon or helper that can ingest events over HTTP or Unix socket and append to the JSONL log.
+1. Add request-level validation and tests for the local HTTP ingest daemon.
 2. Add a sample event writer CLI for integration testing.
 3. Add richer menu-bar visual polish and targeted accessibility assertions for UI smoke automation.
 4. Package a signed `.app` bundle for easier launch outside `swift run`.
