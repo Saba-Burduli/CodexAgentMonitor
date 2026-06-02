@@ -156,20 +156,24 @@ private struct UsageSummaryView: View {
     var metrics: UsageMetrics
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
-            GridRow {
-                MetricCell(label: "Last 5h", value: metrics.window5h.formatted())
-                MetricCell(label: "Last 7d", value: metrics.window7d.formatted())
+        VStack(alignment: .leading, spacing: 8) {
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
+                GridRow {
+                    MetricCell(label: "Last 5h", value: metrics.window5h.formatted())
+                    MetricCell(label: "Last 7d", value: metrics.window7d.formatted())
+                }
+                GridRow {
+                    MetricCell(label: "Total", value: metrics.total.formatted())
+                    MetricCell(label: "Remaining", value: metrics.remaining?.formatted() ?? "Unavailable")
+                }
             }
-            GridRow {
-                MetricCell(label: "Total", value: metrics.total.formatted())
-                MetricCell(label: "Remaining", value: metrics.remaining?.formatted() ?? "Unavailable")
+            if let ratio = metrics.remainingRatio {
+                ProgressView(value: max(0, min(1, 1 - ratio)))
+                    .tint(ratio <= 0.05 ? .red : ratio <= 0.20 ? .yellow : .green)
+                    .accessibilityIdentifier("monitor.usage.progress")
             }
         }
-        if let ratio = metrics.remainingRatio {
-            ProgressView(value: max(0, min(1, 1 - ratio)))
-                .tint(ratio <= 0.05 ? .red : ratio <= 0.20 ? .yellow : .green)
-        }
+        .accessibilityIdentifier("monitor.usage.summary")
     }
 }
 
@@ -215,8 +219,10 @@ private struct DiagnosticsView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(scope.rateLimit.usageRatio >= 0.80 ? .orange : .secondary)
                 }
+                .accessibilityIdentifier("monitor.permission.\(scope.agentId)")
             }
         }
+        .accessibilityIdentifier("monitor.diagnostics.summary")
     }
 }
 
