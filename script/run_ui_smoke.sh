@@ -12,16 +12,25 @@ mkdir -p "$LOG_DIR"
 
 swift run --package-path "$ROOT_DIR" CodexAgentMonitorE2ERunner > "$LOG_DIR/ui-smoke-e2e.log"
 
+grep -q '"id":"tester-agent"' "$EVENT_LOG"
+grep -q '"id":"tester-agent-error-case"' "$EVENT_LOG"
 grep -q '"type":"agent_error"' "$EVENT_LOG"
+grep -q '"activity":"Simulated tool failure handled safely"' "$EVENT_LOG"
 grep -q '"type":"token_usage_updated"' "$EVENT_LOG"
 
 pkill -x CodexAgentMonitor 2>/dev/null || true
 swift run --package-path "$ROOT_DIR" CodexAgentMonitor > "$APP_LOG" 2>&1 &
 echo $! > "$PID_FILE"
 
-sleep 3
+APP_PID=""
+for _ in {1..30}; do
+  APP_PID="$(pgrep -x CodexAgentMonitor | head -1 || true)"
+  if [[ -n "$APP_PID" ]]; then
+    break
+  fi
+  sleep 1
+done
 
-APP_PID="$(pgrep -x CodexAgentMonitor | head -1 || true)"
 if [[ -z "$APP_PID" ]]; then
   cat "$APP_LOG"
   exit 1
