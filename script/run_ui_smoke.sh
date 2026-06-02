@@ -7,8 +7,18 @@ APP_LOG="$LOG_DIR/ui-smoke-app.log"
 SCREENSHOT="$LOG_DIR/ui-smoke-screen.png"
 PID_FILE="$LOG_DIR/ui-smoke.pid"
 EVENT_LOG="$HOME/.codex-agent-monitor/events.jsonl"
+MENU_VIEW="$ROOT_DIR/Sources/CodexAgentMonitor/Views/MonitorMenuView.swift"
 
 mkdir -p "$LOG_DIR"
+
+for identifier in \
+  'monitor.menu.root' \
+  'monitor.header.health' \
+  'monitor.usage.summary' \
+  'monitor.usage.progress' \
+  'monitor.diagnostics.summary'; do
+  grep -q "$identifier" "$MENU_VIEW"
+done
 
 swift run --package-path "$ROOT_DIR" CodexAgentMonitorE2ERunner > "$LOG_DIR/ui-smoke-e2e.log"
 
