@@ -49,6 +49,7 @@ private struct HeaderView: View {
             Circle()
                 .fill(color)
                 .frame(width: 12, height: 12)
+                .shadow(color: color.opacity(0.35), radius: 4)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Codex Agent Monitor")
                     .font(.headline)
@@ -65,6 +66,12 @@ private struct HeaderView: View {
                 .padding(.vertical, 4)
                 .background(color.opacity(0.18), in: Capsule())
         }
+        .padding(12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(color.opacity(0.18), lineWidth: 1)
+        )
     }
 
     private var color: Color {
