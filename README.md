@@ -37,6 +37,14 @@ When launched from Codex, the app runs from the agent PTY. The menu-bar item app
 
 The current Command Line Tools environment cannot import XCTest/Testing, so core checks run through `CodexAgentMonitorTestRunner`. Full validation also runs `CodexAgentMonitorE2ERunner`, which simulates an orchestrator agent and tester agent end to end. Use `swift run CodexAgentMonitorE2ERunner -- --live` to slow the feed down for menu-bar inspection.
 
+## Local Event Writer
+
+Append a sample integration event to the observed JSONL feed:
+
+```sh
+swift run CodexAgentMonitorEventWriter
+```
+
 ## Event Log Contract
 
 Default path:

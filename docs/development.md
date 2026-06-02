@@ -8,6 +8,7 @@ swift build
 ./script/run_ui_smoke.sh
 swift run CodexAgentMonitorTestRunner
 swift run CodexAgentMonitorE2ERunner
+swift run CodexAgentMonitorEventWriter
 swift run CodexAgentMonitor
 ```
 
