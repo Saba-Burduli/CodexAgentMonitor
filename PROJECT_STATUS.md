@@ -34,6 +34,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Additional accessibility identifiers for usage, diagnostics, permission rows, and menu sections.
 - Material-backed menu health header with native visual emphasis.
 - UI smoke assertions that require the menu accessibility identifiers used by automation.
+- Local ad-hoc signed `.app` bundle build via `script/build_app.sh`.
 - Context docs: `AGENTS.md`, `SYSTEM.md`, `PROJECT_STATUS.md`, `README.md`, and `docs/`.
 
 ## Verification
@@ -68,5 +69,4 @@ Runtime smoke completed earlier with `swift run CodexAgentMonitor`; the app proc
 
 ## Next Priorities
 
-1. Package a signed `.app` bundle for easier launch outside `swift run`.
-2. Add a future opt-in enforcement protocol only if explicitly requested.
+1. Add a future opt-in enforcement protocol only if explicitly requested.

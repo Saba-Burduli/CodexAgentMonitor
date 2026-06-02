@@ -28,6 +28,13 @@ swift run CodexAgentMonitor
 
 When launched from Codex, the app runs from the agent PTY. The menu-bar item appears in the macOS menu bar.
 
+Build a local ad-hoc signed app bundle:
+
+```sh
+./script/build_app.sh release
+open dist/CodexAgentMonitor.app
+```
+
 ## Tests
 
 ```sh
