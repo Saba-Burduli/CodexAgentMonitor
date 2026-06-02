@@ -68,11 +68,7 @@ private final class HTTPIngestServer: @unchecked Sendable {
     }
 
     private func ingest(_ request: String) -> Bool {
-        guard request.hasPrefix("POST /events "), let body = request.components(separatedBy: "\r\n\r\n").last else {
-            return false
-        }
-
-        guard let event = try? EventCodec.decoder.decode(MonitorEvent.self, from: Data(body.utf8)) else {
+        guard let event = try? HTTPIngestRequest.decodeEvent(from: request) else {
             return false
         }
 

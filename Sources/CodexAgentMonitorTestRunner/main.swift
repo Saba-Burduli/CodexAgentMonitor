@@ -9,7 +9,8 @@ struct CodexAgentMonitorTestRunner {
         try testHealthBecomesCriticalForPermissionWarning()
         try testJSONLinesDecodeEvents()
         try testStructuredLifecycleAliases()
-        print("CodexAgentMonitorTestRunner: 5 tests passed")
+        try testHTTPIngestRequestValidation()
+        print("CodexAgentMonitorTestRunner: 6 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -111,6 +112,27 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.agents.count == 1, "expected alias events to update one agent")
         try expect(state.agents.first?.status == .completed, "expected agent_completed alias to complete agent")
         try expect(state.activeAgents.isEmpty, "expected completed alias to remove active agent")
+    }
+
+    private static func testHTTPIngestRequestValidation() throws {
+        let body = """
+        {"type":"agent_status_update","agent":{"id":"ingest-test","name":"Ingest Test","status":"running","currentTask":"Validate request","startedAt":"2026-06-02T19:00:00Z","updatedAt":"2026-06-02T19:00:00Z","activity":"Request accepted"}}
+        """
+        let request = "POST /events HTTP/1.1\r\nContent-Length: \(Data(body.utf8).count)\r\n\r\n\(body)"
+        let event = try HTTPIngestRequest.decodeEvent(from: request)
+
+        if case .agentStatusUpdate(let agent) = event {
+            try expect(agent.id == "ingest-test", "expected decoded ingest agent")
+        } else {
+            throw TestFailure(message: "expected agent_status_update event")
+        }
+
+        let badPath = "POST /wrong HTTP/1.1\r\n\r\n\(body)"
+        do {
+            _ = try HTTPIngestRequest.decodeEvent(from: badPath)
+            throw TestFailure(message: "expected bad path rejection")
+        } catch HTTPIngestRequestError.unsupportedPath {
+        }
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
