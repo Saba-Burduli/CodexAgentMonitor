@@ -45,6 +45,20 @@ Append a sample integration event to the observed JSONL feed:
 swift run CodexAgentMonitorEventWriter
 ```
 
+## Local HTTP Ingest Daemon
+
+Run a local observe-only HTTP helper that appends posted `MonitorEvent` JSON to the event log:
+
+```sh
+swift run CodexAgentMonitorIngestDaemon -- --port 8765
+```
+
+For one-shot validation:
+
+```sh
+swift run CodexAgentMonitorIngestDaemon -- --once --port 8765
+```
+
 ## Event Log Contract
 
 Default path:

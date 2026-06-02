@@ -9,6 +9,7 @@ swift build
 swift run CodexAgentMonitorTestRunner
 swift run CodexAgentMonitorE2ERunner
 swift run CodexAgentMonitorEventWriter
+swift run CodexAgentMonitorIngestDaemon -- --once --port 8765
 swift run CodexAgentMonitor
 ```
 
