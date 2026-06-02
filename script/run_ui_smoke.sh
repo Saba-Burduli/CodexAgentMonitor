@@ -43,6 +43,10 @@ if [[ "$PROCESS_COUNT" -lt 1 ]]; then
 fi
 
 screencapture -x "$SCREENSHOT" 2>/dev/null || true
+if [[ ! -s "$SCREENSHOT" ]]; then
+  echo "UI smoke screenshot was not created"
+  exit 1
+fi
 
 kill "$APP_PID" 2>/dev/null || true
 wait "$(cat "$PID_FILE")" 2>/dev/null || true
