@@ -45,6 +45,12 @@ Append a sample integration event to the observed JSONL feed:
 swift run CodexAgentMonitorEventWriter
 ```
 
+Custom sample event:
+
+```sh
+swift run CodexAgentMonitorEventWriter -- --id writer-cli-test --name "Writer CLI Test" --status blocked --task "Validate CLI args" --activity "Custom event emitted"
+```
+
 ## Local HTTP Ingest Daemon
 
 Run a local observe-only HTTP helper that appends posted `MonitorEvent` JSON to the event log:

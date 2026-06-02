@@ -30,6 +30,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - UI smoke checks for expected tester-agent events, final error transition, app process visibility, and screenshot artifact creation.
 - Local HTTP ingest daemon via `CodexAgentMonitorIngestDaemon` for appending posted events to the JSONL feed.
 - Request-level HTTP ingest validation for method, path, content length, and event JSON decoding.
+- Configurable sample event writer arguments for ID, name, status, task, and activity.
 - Context docs: `AGENTS.md`, `SYSTEM.md`, `PROJECT_STATUS.md`, `README.md`, and `docs/`.
 
 ## Verification
@@ -64,7 +65,6 @@ Runtime smoke completed earlier with `swift run CodexAgentMonitor`; the app proc
 
 ## Next Priorities
 
-1. Add CLI arguments to the sample event writer for configurable event payloads.
-2. Add richer menu-bar visual polish and targeted accessibility assertions for UI smoke automation.
-3. Package a signed `.app` bundle for easier launch outside `swift run`.
-4. Add a future opt-in enforcement protocol only if explicitly requested.
+1. Add richer menu-bar visual polish and targeted accessibility assertions for UI smoke automation.
+2. Package a signed `.app` bundle for easier launch outside `swift run`.
+3. Add a future opt-in enforcement protocol only if explicitly requested.
