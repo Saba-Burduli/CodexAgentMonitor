@@ -11,14 +11,15 @@ struct CodexAgentMonitorEventWriter {
         try FileManager.default.createDirectory(at: eventLogURL.deletingLastPathComponent(), withIntermediateDirectories: true)
 
         let now = Date()
+        let status = AgentStatus(rawValue: argumentValue("--status") ?? "running") ?? .running
         let event = MonitorEvent.agentStatusUpdate(AgentTelemetry(
-            id: "manual-writer",
-            name: "Manual Event Writer",
-            status: .running,
-            currentTask: "Emit local integration event",
+            id: argumentValue("--id") ?? "manual-writer",
+            name: argumentValue("--name") ?? "Manual Event Writer",
+            status: status,
+            currentTask: argumentValue("--task") ?? "Emit local integration event",
             startedAt: now,
             updatedAt: now,
-            activity: "Wrote event through CodexAgentMonitorEventWriter"
+            activity: argumentValue("--activity") ?? "Wrote event through CodexAgentMonitorEventWriter"
         ))
 
         let line = try EventCodec.encodeJSONLine(event) + "\n"
@@ -32,5 +33,12 @@ struct CodexAgentMonitorEventWriter {
         }
 
         print("event_written=\(eventLogURL.path)")
+    }
+
+    private static func argumentValue(_ name: String) -> String? {
+        guard let index = CommandLine.arguments.firstIndex(of: name) else { return nil }
+        let valueIndex = CommandLine.arguments.index(after: index)
+        guard valueIndex < CommandLine.arguments.endIndex else { return nil }
+        return CommandLine.arguments[valueIndex]
     }
 }
