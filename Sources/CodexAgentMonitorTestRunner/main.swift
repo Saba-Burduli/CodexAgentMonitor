@@ -10,7 +10,8 @@ struct CodexAgentMonitorTestRunner {
         try testJSONLinesDecodeEvents()
         try testStructuredLifecycleAliases()
         try testHTTPIngestRequestValidation()
-        print("CodexAgentMonitorTestRunner: 6 tests passed")
+        try testSettingsTabDeduplicatesAndFocuses()
+        print("CodexAgentMonitorTestRunner: 7 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -133,6 +134,23 @@ struct CodexAgentMonitorTestRunner {
             throw TestFailure(message: "expected bad path rejection")
         } catch HTTPIngestRequestError.unsupportedPath {
         }
+    }
+
+    private static func testSettingsTabDeduplicatesAndFocuses() throws {
+        var tabs = MonitorTabState()
+
+        tabs.open(.settings)
+        try expect(tabs.tabs.map(\.kind) == [.overview, .settings], "expected settings tab to be added once")
+        try expect(tabs.selected == .settings, "expected settings tab to be selected")
+
+        tabs.select(.overview)
+        tabs.open(.settings)
+        try expect(tabs.tabs.map(\.kind) == [.overview, .settings], "expected existing settings tab to be reused")
+        try expect(tabs.selected == .settings, "expected existing settings tab to be focused")
+
+        tabs.close(.settings)
+        try expect(tabs.tabs.map(\.kind) == [.overview], "expected settings tab to close")
+        try expect(tabs.selected == .overview, "expected overview to be selected after closing settings")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
