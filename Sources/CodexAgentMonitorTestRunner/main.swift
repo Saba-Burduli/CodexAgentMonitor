@@ -184,6 +184,13 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.activeAgents.contains(where: { $0.id == "tool-call_custom" }), "expected custom tool call to mirror as active tool agent")
         state.apply(CodexSessionEventMapper.events(from: customToolOutputLine))
         try expect(state.agents.first(where: { $0.id == "tool-call_custom" })?.status == .completed, "expected custom tool output to complete tool agent")
+
+        let failedPatchLine = """
+        {"timestamp":"2026-05-24T22:45:02.000Z","type":"event_msg","payload":{"type":"patch_apply_end","call_id":"call_patch","success":false,"stderr":"Patch failed"}}
+        """
+        state.apply(CodexSessionEventMapper.events(from: failedPatchLine))
+        try expect(state.agents.first(where: { $0.id == "tool-call_patch" })?.status == .error, "expected failed patch to mirror as tool error")
+        try expect(state.diagnostics.contains("tool-call_patch: Patch failed"), "expected failed patch to add diagnostic")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {

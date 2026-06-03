@@ -45,6 +45,16 @@ public enum CodexSessionEventMapper {
                 updatedAt: timestamp,
                 activity: "Codex session turn completed"
             )]
+        case "patch_apply_end":
+            let callID = payload["call_id"] as? String ?? UUID().uuidString
+            let success = payload["success"] as? Bool ?? false
+            let activity = string(payload["stdout"]) ?? string(payload["stderr"]) ?? "Patch apply finished"
+            return [.agentFinished(
+                agentId: "tool-\(callID)",
+                status: success ? .completed : .error,
+                updatedAt: timestamp,
+                activity: activity
+            )]
         default:
             return []
         }
@@ -133,5 +143,10 @@ public enum CodexSessionEventMapper {
         case let value as String: Double(value)
         default: nil
         }
+    }
+
+    private static func string(_ value: Any?) -> String? {
+        guard let value = value as? String, !value.isEmpty else { return nil }
+        return value
     }
 }
