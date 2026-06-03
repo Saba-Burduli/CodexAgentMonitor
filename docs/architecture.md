@@ -23,7 +23,7 @@ The app must not:
 
 Future integrations should write events into the JSONL file or expose an equivalent local API that can be adapted into `MonitorEvent` values.
 
-`CodexAgentMonitorSessionMirror` is the first local Codex adapter. It reads a selected or latest `~/.codex/sessions/**/*.jsonl` file and appends mapped lifecycle, tool, patch, web-search, token, and rate-limit events to the same event log consumed by the app. In `--follow` mode it tails newly appended session records and mirrors them continuously. It does not execute Codex, control agents, or mutate the source session.
+`CodexAgentMonitorSessionMirror` is the first local Codex adapter. It reads a selected or latest `~/.codex/sessions/**/*.jsonl` file and appends mapped lifecycle, tool, patch, web-search, token, rate-limit, message, reasoning-marker, goal, context, metadata, abort, and compaction events to the same event log consumed by the app. In `--follow` mode it tails newly appended session records and mirrors them continuously. It does not execute Codex, control agents, or mutate the source session.
 
 ## Event Flow
 

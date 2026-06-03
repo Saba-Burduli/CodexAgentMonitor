@@ -37,7 +37,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Local ad-hoc signed `.app` bundle build via `script/build_app.sh`.
 - Settings now opens as a de-duplicated, focusable, closable tab beside Overview.
 - UI smoke checks include the tab container and dynamic tab identifier expression.
-- Codex session JSONL mapper for task lifecycle, token usage, rate limits, tool calls, custom tools, patch results, and web search records.
+- Codex session JSONL mapper for task lifecycle, token usage, rate limits, tool calls, custom tools, patch results, web search, messages, reasoning markers, goal updates, turn context, session metadata, aborts, and compaction records.
 - Codex session mirror CLI via `CodexAgentMonitorSessionMirror`, including `--session` and `--event-log` options.
 - Codex session mirror follow mode via `--follow`, with bounded `--max-polls` support for deterministic smoke tests.
 - Shared core `EventLogReader`, so app UI polling and verification tests replay the same event-log state path.
@@ -56,7 +56,7 @@ Latest local verification command:
 Latest known result:
 
 ```text
-CodexAgentMonitorTestRunner: 9 tests passed
+CodexAgentMonitorTestRunner: 10 tests passed
 CodexAgentMonitorE2ERunner: passed
 CodexAgentMonitor session mirror smoke passed
 events_processed=16
