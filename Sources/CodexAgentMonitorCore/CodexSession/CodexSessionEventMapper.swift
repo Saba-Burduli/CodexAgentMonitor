@@ -81,11 +81,11 @@ public enum CodexSessionEventMapper {
                 activity: string(payload["query"]) ?? actionSummary(payload["action"]) ?? "Web search completed"
             ))]
         case "user_message":
-            return threadEvents(task: "User message", activity: excerpt(string(payload["message"]) ?? "User message recorded"), timestamp: timestamp)
+            return threadEvents(task: "User message", activity: string(payload["message"]) ?? "User message recorded", timestamp: timestamp)
         case "agent_message":
-            return threadEvents(task: "Agent message", activity: excerpt(string(payload["message"]) ?? "Agent message recorded"), timestamp: timestamp)
+            return threadEvents(task: "Agent message", activity: string(payload["message"]) ?? "Agent message recorded", timestamp: timestamp)
         case "thread_goal_updated":
-            return threadEvents(task: "Thread goal updated", activity: excerpt(string(payload["objective"]) ?? string(payload["goal"]) ?? "Thread goal updated"), timestamp: timestamp)
+            return threadEvents(task: "Thread goal updated", activity: string(payload["objective"]) ?? string(payload["goal"]) ?? "Thread goal updated", timestamp: timestamp)
         case "turn_aborted":
             let turnID = payload["turn_id"] as? String ?? "codex-thread"
             return [.agentError(agentId: turnID, updatedAt: timestamp, activity: "Codex turn aborted")]
@@ -130,7 +130,7 @@ public enum CodexSessionEventMapper {
             ))]
         case "message":
             let role = string(payload["role"]) ?? "message"
-            return threadEvents(task: "Codex \(role) message", activity: excerpt(messageText(payload["content"]) ?? "\(role) message recorded"), timestamp: timestamp)
+            return threadEvents(task: "Codex \(role) message", activity: messageText(payload["content"]) ?? "\(role) message recorded", timestamp: timestamp)
         case "reasoning":
             return threadEvents(task: "Codex reasoning", activity: reasoningSummary(payload) ?? "Reasoning item recorded", timestamp: timestamp)
         default:
@@ -234,7 +234,7 @@ public enum CodexSessionEventMapper {
                 title: task,
                 detail: activity
             )),
-            threadActivity(task: task, activity: activity, timestamp: timestamp)
+            threadActivity(task: task, activity: excerpt(activity), timestamp: timestamp)
         ]
     }
 
