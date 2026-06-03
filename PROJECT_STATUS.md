@@ -39,8 +39,10 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - UI smoke checks include the tab container and dynamic tab identifier expression.
 - Codex session JSONL mapper for task lifecycle, token usage, rate limits, tool calls, custom tools, patch results, and web search records.
 - Codex session mirror CLI via `CodexAgentMonitorSessionMirror`, including `--session` and `--event-log` options.
+- Codex session mirror follow mode via `--follow`, with bounded `--max-polls` support for deterministic smoke tests.
 - Shared core `EventLogReader`, so app UI polling and verification tests replay the same event-log state path.
 - Mirrored-session replay test proving mapped Codex session events reduce into active agents, usage metrics, and permission/rate-limit state.
+- Session mirror smoke script validating one-shot import and live appended-line follow behavior.
 - Context docs: `AGENTS.md`, `SYSTEM.md`, `PROJECT_STATUS.md`, `README.md`, and `docs/`.
 
 ## Verification
@@ -56,6 +58,7 @@ Latest known result:
 ```text
 CodexAgentMonitorTestRunner: 9 tests passed
 CodexAgentMonitorE2ERunner: passed
+CodexAgentMonitor session mirror smoke passed
 events_processed=16
 checks_passed=8
 final_health=critical
@@ -69,7 +72,7 @@ Runtime smoke completed earlier with `swift run CodexAgentMonitor`; the app proc
 
 - The app is observe-only and does not control Codex agents.
 - Real Codex token/quota data requires an explicit external integration layer to emit events.
-- Real Codex session import is currently a local CLI adapter, not an automatic live tail of the active Codex thread.
+- Real Codex session import is a local CLI adapter. Live mirroring requires running `CodexAgentMonitorSessionMirror --follow` beside the app.
 - The local Command Line Tools environment cannot import XCTest or Testing, so tests are implemented through an executable runner.
 - The app currently polls a JSONL file rather than using a persistent daemon or socket stream.
 - E2E validation logs are runtime artifacts at `logs/e2e-validation.log` and are regenerated locally.

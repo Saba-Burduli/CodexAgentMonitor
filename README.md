@@ -90,6 +90,18 @@ For isolated validation without touching the live app feed:
 swift run CodexAgentMonitorSessionMirror -- --session ~/.codex/sessions/YYYY/MM/DD/rollout-file.jsonl --event-log /tmp/codex-agent-monitor-events.jsonl
 ```
 
+Follow a session file and mirror new records into the live app feed:
+
+```sh
+swift run CodexAgentMonitorSessionMirror -- --session ~/.codex/sessions/YYYY/MM/DD/rollout-file.jsonl --follow
+```
+
+For deterministic validation, bounded follow mode is available:
+
+```sh
+swift run CodexAgentMonitorSessionMirror -- --session /tmp/session.jsonl --event-log /tmp/events.jsonl --follow --poll-interval 0.2 --max-polls 4
+```
+
 ## Event Log Contract
 
 Default path:
