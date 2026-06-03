@@ -26,7 +26,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Demo telemetry when no event log is available.
 - Core reducer and event codec in `CodexAgentMonitorCore`.
 - Executable verification runner via `CodexAgentMonitorTestRunner`.
-- Orchestrated E2E simulation via `CodexAgentMonitorE2ERunner` with simulated Orchestrator Agent and Tester Agent.
+- Orchestrated E2E simulation via `CodexAgentMonitorE2ERunner` with simulated Orchestrator, Tester, Constraint Audit, and Session Mirror Validation agents.
 - Menu-bar UI smoke runner via `script/run_ui_smoke.sh`.
 - UI smoke checks for expected tester-agent events, final error transition, app process visibility, and screenshot artifact creation.
 - Local HTTP ingest daemon via `CodexAgentMonitorIngestDaemon` for appending posted events to the JSONL feed.
@@ -61,10 +61,10 @@ Latest known result:
 CodexAgentMonitorTestRunner: 11 tests passed
 CodexAgentMonitorE2ERunner: passed
 CodexAgentMonitor session mirror smoke passed
-events_processed=16
-checks_passed=8
+events_processed=30
+checks_passed=16
 final_health=critical
-final_agents=2
+final_agents=7
 active_agents=0
 ```
 

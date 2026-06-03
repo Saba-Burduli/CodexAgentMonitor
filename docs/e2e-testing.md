@@ -6,6 +6,8 @@ CodexAgentMonitor includes a simulated multi-agent validation flow that must pas
 
 - `OrchestratorAgent`: receives events, updates global `MonitorState`, writes the app-readable JSONL feed, and writes validation logs.
 - `TesterAgent`: simulated Codex worker that sends lifecycle, rapid update, token usage, permission, completion, and error events.
+- `ConstraintAuditAgent`: verifies the observe-only permission boundary by allowing only session reads, monitor event-log writes, and local validation.
+- `SessionMirrorValidationAgent`: feeds Codex-style JSONL records through `CodexSessionEventMapper` and sends the mapped events through the orchestrator.
 - `CodexAgentMonitorE2ERunner`: executable runner that wires the orchestrator and tester together, validates state transitions, and emits results.
 
 ## Communication Channel
@@ -30,8 +32,9 @@ The E2E flow emits:
 - `agent_error`
 - `token_usage_updated`
 - `permission_warning_triggered`
+- `session_activity_recorded`
 
-It covers normal lifecycle, delayed/blocked state, rapid updates, usage changes, completion cleanup, and one handled failure case.
+It covers normal lifecycle, delayed/blocked state, rapid updates, usage changes, completion cleanup, one handled failure case, observe-only permission constraints, Codex session JSONL mapping, mirrored session activity history, and ghost-agent cleanup.
 
 ## Validation Checks
 
@@ -44,8 +47,11 @@ The runner verifies:
 - completed agents leave the active list;
 - the simulated error agent is captured safely;
 - system health becomes critical after the error;
-- token usage metrics reflect the final spiking usage update;
-- diagnostics include the simulated failure.
+- tester permission metrics remain captured after later mirrored session usage updates;
+- diagnostics include the simulated failure;
+- observe-only permissions do not include forbidden Codex control operations;
+- mapped Codex session JSONL creates completed turn/tool agents, token metrics, and session activity history;
+- no synthetic session activity row remains active after the mirrored turn completes.
 
 ## Run
 
@@ -70,10 +76,10 @@ Latest expected success output:
 
 ```text
 CodexAgentMonitorE2ERunner: passed
-events_processed=16
-checks_passed=8
+events_processed=30
+checks_passed=16
 final_health=critical
-final_agents=2
+final_agents=7
 active_agents=0
 event_log=/Users/sababurduli/.codex-agent-monitor/events.jsonl
 validation_log=/Users/sababurduli/CodexAgentMonitor/logs/e2e-validation.log
