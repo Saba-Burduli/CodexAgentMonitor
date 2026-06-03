@@ -19,6 +19,7 @@ for identifier in \
   'monitor.sessionActivity.summary' \
   'monitor.usage.summary' \
   'monitor.usage.progress' \
+  'monitor.policy.summary' \
   'monitor.diagnostics.summary'; do
   grep -Fq "$identifier" "$MENU_VIEW"
 done

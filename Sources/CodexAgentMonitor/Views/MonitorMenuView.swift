@@ -303,6 +303,8 @@ private struct DiagnosticsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            PolicySummaryView(state: state)
+
             if state.diagnostics.isEmpty {
                 EmptyStateView(text: "No diagnostics warnings")
             } else {
@@ -328,6 +330,26 @@ private struct DiagnosticsView: View {
             }
         }
         .accessibilityIdentifier("monitor.diagnostics.summary")
+    }
+}
+
+private struct PolicySummaryView: View {
+    var state: MonitorState
+
+    private var violationCount: Int {
+        state.permissions.reduce(0) { count, scope in
+            count + scope.warnings.filter { $0.contains("Observe-only policy forbids operation") }.count
+        }
+    }
+
+    var body: some View {
+        Label(
+            violationCount == 0 ? "Observe-only boundary intact" : "Observe-only violations: \(violationCount)",
+            systemImage: violationCount == 0 ? "eye" : "exclamationmark.octagon"
+        )
+        .font(.caption)
+        .foregroundStyle(violationCount == 0 ? Color.secondary : Color.red)
+        .accessibilityIdentifier("monitor.policy.summary")
     }
 }
 
