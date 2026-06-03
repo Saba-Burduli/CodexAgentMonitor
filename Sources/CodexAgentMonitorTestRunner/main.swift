@@ -173,6 +173,17 @@ struct CodexAgentMonitorTestRunner {
         """
         state.apply(CodexSessionEventMapper.events(from: toolLine))
         try expect(state.activeAgents.contains(where: { $0.id == "tool-call_123" }), "expected tool call to mirror as active tool agent")
+
+        let customToolLine = """
+        {"timestamp":"2026-05-24T22:45:00.000Z","type":"response_item","payload":{"type":"custom_tool_call","name":"apply_patch","input":"*** Begin Patch","call_id":"call_custom"}}
+        """
+        let customToolOutputLine = """
+        {"timestamp":"2026-05-24T22:45:01.000Z","type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"call_custom","output":"Success"}}
+        """
+        state.apply(CodexSessionEventMapper.events(from: customToolLine))
+        try expect(state.activeAgents.contains(where: { $0.id == "tool-call_custom" }), "expected custom tool call to mirror as active tool agent")
+        state.apply(CodexSessionEventMapper.events(from: customToolOutputLine))
+        try expect(state.agents.first(where: { $0.id == "tool-call_custom" })?.status == .completed, "expected custom tool output to complete tool agent")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {

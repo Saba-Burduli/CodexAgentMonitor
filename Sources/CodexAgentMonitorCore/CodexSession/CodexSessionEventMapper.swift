@@ -52,7 +52,7 @@ public enum CodexSessionEventMapper {
 
     private static func events(fromResponseItem payload: [String: Any], timestamp: Date) -> [MonitorEvent] {
         switch payload["type"] as? String {
-        case "function_call":
+        case "function_call", "custom_tool_call":
             let callID = payload["call_id"] as? String ?? UUID().uuidString
             let toolName = payload["name"] as? String ?? "tool"
             return [.agentStarted(AgentTelemetry(
@@ -62,9 +62,9 @@ public enum CodexSessionEventMapper {
                 currentTask: "Running Codex tool call",
                 startedAt: timestamp,
                 updatedAt: timestamp,
-                activity: payload["arguments"] as? String ?? "Tool call started"
+                activity: payload["arguments"] as? String ?? payload["input"] as? String ?? "Tool call started"
             ))]
-        case "function_call_output":
+        case "function_call_output", "custom_tool_call_output":
             let callID = payload["call_id"] as? String ?? UUID().uuidString
             return [.agentCompleted(
                 agentId: "tool-\(callID)",
