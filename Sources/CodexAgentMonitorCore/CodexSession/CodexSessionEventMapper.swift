@@ -55,6 +55,17 @@ public enum CodexSessionEventMapper {
                 updatedAt: timestamp,
                 activity: activity
             )]
+        case "web_search_end":
+            let callID = payload["call_id"] as? String ?? UUID().uuidString
+            return [.agentStatusUpdate(AgentTelemetry(
+                id: "web-search-\(callID)",
+                name: "Web Search",
+                status: .completed,
+                currentTask: "Codex web search",
+                startedAt: timestamp,
+                updatedAt: timestamp,
+                activity: string(payload["query"]) ?? actionSummary(payload["action"]) ?? "Web search completed"
+            ))]
         default:
             return []
         }
@@ -81,6 +92,17 @@ public enum CodexSessionEventMapper {
                 updatedAt: timestamp,
                 activity: "Tool call completed"
             )]
+        case "web_search_call":
+            let action = actionSummary(payload["action"]) ?? "Web search"
+            return [.agentStatusUpdate(AgentTelemetry(
+                id: "web-search-\(Int(timestamp.timeIntervalSince1970 * 1_000))",
+                name: "Web Search",
+                status: status(from: payload["status"] as? String),
+                currentTask: "Codex web search",
+                startedAt: timestamp,
+                updatedAt: timestamp,
+                activity: action
+            ))]
         default:
             return []
         }
@@ -148,5 +170,17 @@ public enum CodexSessionEventMapper {
     private static func string(_ value: Any?) -> String? {
         guard let value = value as? String, !value.isEmpty else { return nil }
         return value
+    }
+
+    private static func status(from value: String?) -> AgentStatus {
+        value == "completed" ? .completed : .running
+    }
+
+    private static func actionSummary(_ value: Any?) -> String? {
+        guard let action = value as? [String: Any] else { return nil }
+        if let queries = action["queries"] as? [String], !queries.isEmpty {
+            return queries.joined(separator: ", ")
+        }
+        return string(action["type"])
     }
 }
