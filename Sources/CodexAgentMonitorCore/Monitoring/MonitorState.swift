@@ -71,8 +71,9 @@ public struct MonitorState: Equatable, Sendable {
             usage = metrics
             lastEventAt = metrics.updatedAt
         case .permissionWarningTriggered(let scope):
-            upsert(scope)
-            diagnostics.append(contentsOf: scope.warnings.map { "\(scope.agentId): \($0)" })
+            let sanitized = ObserveOnlyPolicy.sanitized(scope)
+            upsert(sanitized)
+            diagnostics.append(contentsOf: sanitized.warnings.map { "\(sanitized.agentId): \($0)" })
             lastEventAt = Date()
         case .sessionActivityRecorded(let activity):
             sessionActivities.append(activity)

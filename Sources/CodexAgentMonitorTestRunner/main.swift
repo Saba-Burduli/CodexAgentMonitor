@@ -11,11 +11,12 @@ struct CodexAgentMonitorTestRunner {
         try testStructuredLifecycleAliases()
         try testHTTPIngestRequestValidation()
         try testSessionActivityEventsReplayIntoState()
+        try testObserveOnlyPolicySanitizesForbiddenOperations()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 11 tests passed")
+        print("CodexAgentMonitorTestRunner: 12 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -155,6 +156,22 @@ struct CodexAgentMonitorTestRunner {
 
         try expect(state.sessionActivities == [activity], "expected session activity to replay into state")
         try expect(state.lastEventAt == activity.timestamp, "expected session activity timestamp to update last event")
+    }
+
+    private static func testObserveOnlyPolicySanitizesForbiddenOperations() throws {
+        var state = MonitorState()
+        state.apply(.permissionWarningTriggered(PermissionScope(
+            agentId: "policy-test",
+            allowedOperations: ["read_codex_session_jsonl", "modify_codex", "control_agents"],
+            rateLimit: RateLimit(limit: 100, used: 5, window: "1h")
+        )))
+
+        let scope = state.permissions.first(where: { $0.agentId == "policy-test" })
+        try expect(scope?.allowedOperations == ["read_codex_session_jsonl"], "expected forbidden operations to be removed")
+        try expect(scope?.warnings.count == 2, "expected forbidden operation warnings")
+        try expect(state.diagnostics.contains("policy-test: Observe-only policy forbids operation: modify_codex"), "expected modify Codex diagnostic")
+        try expect(state.diagnostics.contains("policy-test: Observe-only policy forbids operation: control_agents"), "expected control agents diagnostic")
+        try expect(state.health == .critical, "expected policy violation to make health critical")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {

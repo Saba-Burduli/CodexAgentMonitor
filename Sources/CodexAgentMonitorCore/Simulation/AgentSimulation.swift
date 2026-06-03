@@ -339,9 +339,8 @@ public enum AgentSimulation {
     }
 
     private static func hasForbiddenOperations(in permissions: [PermissionScope], agentId: String) -> Bool {
-        let forbidden = Set(["modify_codex", "control_agents", "kill_processes", "execute_external_systems"])
         let allowed = permissions.first(where: { $0.agentId == agentId })?.allowedOperations ?? []
-        return !forbidden.isDisjoint(with: allowed)
+        return !ObserveOnlyPolicy.violations(in: allowed).isEmpty
     }
 }
 
