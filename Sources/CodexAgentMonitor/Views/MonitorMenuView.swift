@@ -92,6 +92,9 @@ private struct OverviewTabView: View {
                 }
             }
 
+            SectionHeader(title: "Session Activity", value: "\(model.state.sessionActivities.count)")
+            SessionActivityList(activities: Array(model.state.sessionActivities.suffix(5).reversed()))
+
             SectionHeader(title: "Token Usage", value: model.state.usage.trend.rawValue.capitalized)
             UsageSummaryView(metrics: model.state.usage)
 
@@ -99,6 +102,39 @@ private struct OverviewTabView: View {
             DiagnosticsView(state: model.state)
         }
         .accessibilityIdentifier("monitor.tab.overview.content")
+    }
+}
+
+private struct SessionActivityList: View {
+    var activities: [SessionActivity]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if activities.isEmpty {
+                EmptyStateView(text: "No session activity mirrored")
+            } else {
+                ForEach(activities) { activity in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(activity.title)
+                                .font(.caption.weight(.semibold))
+                            Spacer()
+                            Text(activity.timestamp.formatted(date: .omitted, time: .standard))
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(activity.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    .padding(8)
+                    .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+                    .accessibilityIdentifier("monitor.sessionActivity.\(activity.id)")
+                }
+            }
+        }
+        .accessibilityIdentifier("monitor.sessionActivity.summary")
     }
 }
 

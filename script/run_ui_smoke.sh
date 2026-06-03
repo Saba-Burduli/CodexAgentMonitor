@@ -16,6 +16,7 @@ for identifier in \
   'monitor.tabs' \
   'tab.kind.rawValue' \
   'monitor.header.health' \
+  'monitor.sessionActivity.summary' \
   'monitor.usage.summary' \
   'monitor.usage.progress' \
   'monitor.diagnostics.summary'; do
