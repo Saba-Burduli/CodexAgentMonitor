@@ -5,9 +5,7 @@ import Foundation
 struct CodexAgentMonitorSessionMirror {
     static func main() throws {
         let sessionURL = try sessionPath().standardizedFileURL
-        let eventLogURL = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".codex-agent-monitor", isDirectory: true)
-            .appendingPathComponent("events.jsonl")
+        let eventLogURL = eventLogPath().standardizedFileURL
         try FileManager.default.createDirectory(at: eventLogURL.deletingLastPathComponent(), withIntermediateDirectories: true)
 
         let lines = try String(contentsOf: sessionURL, encoding: .utf8).split(whereSeparator: \.isNewline)
@@ -41,6 +39,15 @@ struct CodexAgentMonitorSessionMirror {
             throw MirrorError.noSessionFound
         }
         return latest
+    }
+
+    private static func eventLogPath() -> URL {
+        if let path = argumentValue("--event-log") {
+            return URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".codex-agent-monitor", isDirectory: true)
+            .appendingPathComponent("events.jsonl")
     }
 
     private static func latestJSONL(under root: URL) -> URL? {
