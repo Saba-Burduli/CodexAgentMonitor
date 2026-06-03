@@ -192,6 +192,45 @@ public struct TesterAgent {
     }
 }
 
+public struct ConstraintAuditAgent {
+    public var id: String
+    public var now: Date
+
+    public init(id: String = "constraint-audit-agent", now: Date = Date()) {
+        self.id = id
+        self.now = now
+    }
+
+    public func run<Sink: AgentEventSink>(through sink: inout Sink) throws {
+        try sink.receive(.agentStarted(AgentTelemetry(
+            id: id,
+            name: "Constraint Audit Agent",
+            status: .running,
+            currentTask: "Audit observe-only boundaries",
+            startedAt: now,
+            updatedAt: now,
+            activity: "Checking monitor permissions and product constraints"
+        )))
+        try sink.receive(.permissionWarningTriggered(PermissionScope(
+            agentId: id,
+            allowedOperations: ["read_codex_session_jsonl", "write_monitor_event_log", "run_local_validation"],
+            rateLimit: RateLimit(limit: 60, used: 12, window: "1h"),
+            warnings: []
+        )))
+        try sink.receive(.sessionActivityRecorded(SessionActivity(
+            timestamp: now.addingTimeInterval(1),
+            category: "constraint_audit",
+            title: "Observe-only boundary verified",
+            detail: "Audit permits session reads, monitor event-log writes, and local validation only. It does not permit modifying Codex, controlling agents, killing processes, or invoking external systems."
+        )))
+        try sink.receive(.agentCompleted(
+            agentId: id,
+            updatedAt: now.addingTimeInterval(2),
+            activity: "Observe-only constraint audit completed"
+        ))
+    }
+}
+
 public enum AgentSimulation {
     public static func run(
         eventLogURL: URL,
@@ -202,9 +241,11 @@ public enum AgentSimulation {
         var orchestrator = try OrchestratorAgent(eventLogURL: eventLogURL, validationLogURL: validationLogURL)
         let tester = TesterAgent(now: now, eventDelay: eventDelay)
         try tester.run(through: &orchestrator)
+        let constraintAudit = ConstraintAuditAgent(now: now.addingTimeInterval(16))
+        try constraintAudit.run(through: &orchestrator)
 
         var checksPassed = 0
-        try check(orchestrator.eventsProcessed == 16, "expected 16 processed events") { checksPassed += 1 }
+        try check(orchestrator.eventsProcessed == 20, "expected 20 processed events") { checksPassed += 1 }
         try check(orchestrator.state.agents.map(\.id).uniqueCount == orchestrator.state.agents.count, "expected no duplicate agents") { checksPassed += 1 }
         try check(orchestrator.state.agents.first(where: { $0.id == tester.id })?.status == .completed, "expected tester agent completion") { checksPassed += 1 }
         try check(!orchestrator.state.activeAgents.contains(where: { $0.id == tester.id }), "expected completed tester cleanup from active list") { checksPassed += 1 }
@@ -212,6 +253,9 @@ public enum AgentSimulation {
         try check(orchestrator.state.health == .critical, "expected critical health after simulated error") { checksPassed += 1 }
         try check(orchestrator.state.usage.window5h == 98_000 && orchestrator.state.usage.trend == .spiking, "expected final usage metrics") { checksPassed += 1 }
         try check(orchestrator.state.diagnostics.contains(where: { $0.contains("Simulated tool failure") }), "expected error diagnostic") { checksPassed += 1 }
+        try check(orchestrator.state.agents.first(where: { $0.id == constraintAudit.id })?.status == .completed, "expected constraint audit completion") { checksPassed += 1 }
+        try check(orchestrator.state.sessionActivities.contains(where: { $0.category == "constraint_audit" }), "expected constraint audit activity") { checksPassed += 1 }
+        try check(!hasForbiddenOperations(in: orchestrator.state.permissions, agentId: constraintAudit.id), "expected observe-only permissions") { checksPassed += 1 }
 
         try appendSummary(to: validationLogURL, checksPassed: checksPassed, state: orchestrator.state)
         return orchestrator.makeReport(checksPassed: checksPassed)
@@ -228,6 +272,12 @@ public enum AgentSimulation {
         try handle.seekToEnd()
         try handle.write(contentsOf: Data(summary.utf8))
         try handle.close()
+    }
+
+    private static func hasForbiddenOperations(in permissions: [PermissionScope], agentId: String) -> Bool {
+        let forbidden = Set(["modify_codex", "control_agents", "kill_processes", "execute_external_systems"])
+        let allowed = permissions.first(where: { $0.agentId == agentId })?.allowedOperations ?? []
+        return !forbidden.isDisjoint(with: allowed)
     }
 }
 
