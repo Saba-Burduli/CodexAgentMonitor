@@ -231,6 +231,63 @@ public struct ConstraintAuditAgent {
     }
 }
 
+public struct SessionMirrorValidationAgent {
+    public var id: String
+    public var now: Date
+
+    public init(id: String = "session-mirror-validation-agent", now: Date = Date()) {
+        self.id = id
+        self.now = now
+    }
+
+    public func run<Sink: AgentEventSink>(through sink: inout Sink) throws {
+        try sink.receive(.agentStarted(AgentTelemetry(
+            id: id,
+            name: "Session Mirror Validation Agent",
+            status: .running,
+            currentTask: "Validate Codex session mirroring",
+            startedAt: now,
+            updatedAt: now,
+            activity: "Mapping synthetic Codex session JSONL through the real mapper"
+        )))
+
+        for line in codexSessionLines {
+            for event in CodexSessionEventMapper.events(from: line) {
+                try sink.receive(event)
+            }
+        }
+
+        try sink.receive(.agentCompleted(
+            agentId: id,
+            updatedAt: now.addingTimeInterval(3),
+            activity: "Session mirror validation completed"
+        ))
+    }
+
+    private var codexSessionLines: [String] {
+        [
+            """
+            {"timestamp":"2026-06-03T10:02:00.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"mirror-turn","started_at":1780480920}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:02:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Validate mirrored session activity"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:02:02.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\\"cmd\\":\\"swift test\\"}","call_id":"call_mirror"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:02:03.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_mirror","output":"passed"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:02:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":5000},"last_token_usage":{"total_tokens":500}},"rate_limits":{"primary":{"used_percent":70.0,"window_minutes":300}}}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:02:05.000Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"mirror-turn"}}
+            """
+        ]
+    }
+}
+
 public enum AgentSimulation {
     public static func run(
         eventLogURL: URL,
@@ -243,19 +300,26 @@ public enum AgentSimulation {
         try tester.run(through: &orchestrator)
         let constraintAudit = ConstraintAuditAgent(now: now.addingTimeInterval(16))
         try constraintAudit.run(through: &orchestrator)
+        let sessionMirrorValidation = SessionMirrorValidationAgent(now: now.addingTimeInterval(19))
+        try sessionMirrorValidation.run(through: &orchestrator)
 
         var checksPassed = 0
-        try check(orchestrator.eventsProcessed == 20, "expected 20 processed events") { checksPassed += 1 }
+        try check(orchestrator.eventsProcessed == 30, "expected 30 processed events") { checksPassed += 1 }
         try check(orchestrator.state.agents.map(\.id).uniqueCount == orchestrator.state.agents.count, "expected no duplicate agents") { checksPassed += 1 }
         try check(orchestrator.state.agents.first(where: { $0.id == tester.id })?.status == .completed, "expected tester agent completion") { checksPassed += 1 }
         try check(!orchestrator.state.activeAgents.contains(where: { $0.id == tester.id }), "expected completed tester cleanup from active list") { checksPassed += 1 }
         try check(orchestrator.state.agents.first(where: { $0.id == tester.errorAgentId })?.status == .error, "expected error scenario to be captured") { checksPassed += 1 }
         try check(orchestrator.state.health == .critical, "expected critical health after simulated error") { checksPassed += 1 }
-        try check(orchestrator.state.usage.window5h == 98_000 && orchestrator.state.usage.trend == .spiking, "expected final usage metrics") { checksPassed += 1 }
+        try check(orchestrator.state.permissions.contains(where: { $0.agentId == tester.id && $0.rateLimit.used == 82 }), "expected tester permission metrics") { checksPassed += 1 }
         try check(orchestrator.state.diagnostics.contains(where: { $0.contains("Simulated tool failure") }), "expected error diagnostic") { checksPassed += 1 }
         try check(orchestrator.state.agents.first(where: { $0.id == constraintAudit.id })?.status == .completed, "expected constraint audit completion") { checksPassed += 1 }
         try check(orchestrator.state.sessionActivities.contains(where: { $0.category == "constraint_audit" }), "expected constraint audit activity") { checksPassed += 1 }
         try check(!hasForbiddenOperations(in: orchestrator.state.permissions, agentId: constraintAudit.id), "expected observe-only permissions") { checksPassed += 1 }
+        try check(orchestrator.state.agents.first(where: { $0.id == sessionMirrorValidation.id })?.status == .completed, "expected session mirror validation completion") { checksPassed += 1 }
+        try check(orchestrator.state.agents.first(where: { $0.id == "mirror-turn" })?.status == .completed, "expected mirrored Codex turn completion") { checksPassed += 1 }
+        try check(orchestrator.state.agents.first(where: { $0.id == "tool-call_mirror" })?.status == .completed, "expected mirrored tool completion") { checksPassed += 1 }
+        try check(orchestrator.state.sessionActivities.contains(where: { $0.detail == "Validate mirrored session activity" }), "expected mirrored session activity history") { checksPassed += 1 }
+        try check(orchestrator.state.usage.total == 5_000 && orchestrator.state.usage.window5h == 500, "expected mirrored Codex token metrics") { checksPassed += 1 }
 
         try appendSummary(to: validationLogURL, checksPassed: checksPassed, state: orchestrator.state)
         return orchestrator.makeReport(checksPassed: checksPassed)

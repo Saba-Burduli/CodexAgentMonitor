@@ -218,7 +218,7 @@ public enum CodexSessionEventMapper {
         .agentStatusUpdate(AgentTelemetry(
             id: "codex-thread",
             name: "Codex Thread",
-            status: .running,
+            status: .completed,
             currentTask: task,
             startedAt: timestamp,
             updatedAt: timestamp,
