@@ -11,7 +11,8 @@ struct CodexAgentMonitorTestRunner {
         try testStructuredLifecycleAliases()
         try testHTTPIngestRequestValidation()
         try testSettingsTabDeduplicatesAndFocuses()
-        print("CodexAgentMonitorTestRunner: 7 tests passed")
+        try testCodexSessionMapperMirrorsUsageAndToolEvents()
+        print("CodexAgentMonitorTestRunner: 8 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -151,6 +152,27 @@ struct CodexAgentMonitorTestRunner {
         tabs.close(.settings)
         try expect(tabs.tabs.map(\.kind) == [.overview], "expected settings tab to close")
         try expect(tabs.selected == .overview, "expected overview to be selected after closing settings")
+    }
+
+    private static func testCodexSessionMapperMirrorsUsageAndToolEvents() throws {
+        let tokenLine = """
+        {"timestamp":"2026-05-24T22:44:26.308Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":24152842},"last_token_usage":{"total_tokens":182089}},"rate_limits":{"primary":{"used_percent":100.0,"window_minutes":10080}}}}
+        """
+        let usageEvents = CodexSessionEventMapper.events(from: tokenLine)
+        try expect(usageEvents.count == 2, "expected usage and rate-limit events")
+
+        var state = MonitorState()
+        state.apply(usageEvents)
+        try expect(state.usage.window5h == 182089, "expected last token usage to mirror into 5h window")
+        try expect(state.usage.total == 24152842, "expected total token usage to mirror")
+        try expect(state.permissions.first?.rateLimit.used == 100, "expected rate limit percent to mirror")
+        try expect(state.health == .critical, "expected exhausted Codex rate limit to be critical")
+
+        let toolLine = """
+        {"timestamp":"2026-05-24T22:44:26.205Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\\"cmd\\":\\"git status\\"}","call_id":"call_123"}}
+        """
+        state.apply(CodexSessionEventMapper.events(from: toolLine))
+        try expect(state.activeAgents.contains(where: { $0.id == "tool-call_123" }), "expected tool call to mirror as active tool agent")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
