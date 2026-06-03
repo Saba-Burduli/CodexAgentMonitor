@@ -12,7 +12,8 @@ struct CodexAgentMonitorTestRunner {
         try testHTTPIngestRequestValidation()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
-        print("CodexAgentMonitorTestRunner: 8 tests passed")
+        try testEventLogReaderReplaysMirroredSessionEvents()
+        print("CodexAgentMonitorTestRunner: 9 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -202,6 +203,34 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.agents.contains(where: { $0.name == "Web Search" && $0.activity == "codex monitor" }), "expected web search call to mirror as agent state")
         state.apply(CodexSessionEventMapper.events(from: webSearchEndLine))
         try expect(state.agents.first(where: { $0.id == "web-search-ws_123" })?.status == .completed, "expected web search end to mirror as completed")
+    }
+
+    private static func testEventLogReaderReplaysMirroredSessionEvents() throws {
+        let lines = [
+            """
+            {"timestamp":"2026-05-24T22:45:05.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-reader","started_at":1780008305}}
+            """,
+            """
+            {"timestamp":"2026-05-24T22:45:06.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\\"cmd\\":\\"git status\\"}","call_id":"call_reader"}}
+            """,
+            """
+            {"timestamp":"2026-05-24T22:45:07.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":2000},"last_token_usage":{"total_tokens":200}},"rate_limits":{"primary":{"used_percent":85.0,"window_minutes":300}}}}
+            """
+        ]
+        let events = lines.flatMap { CodexSessionEventMapper.events(from: $0) }
+        let text = try events.map { try EventCodec.encodeJSONLine($0) }.joined(separator: "\n")
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("codex-agent-monitor-reader-\(UUID().uuidString).jsonl")
+        try "\(text)\n".write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        guard let state = EventLogReader(url: url).readState() else {
+            throw TestFailure(message: "expected reader to replay mirrored session events")
+        }
+        try expect(state.activeAgents.contains(where: { $0.id == "turn-reader" }), "expected Codex turn to replay into active UI state")
+        try expect(state.activeAgents.contains(where: { $0.id == "tool-call_reader" }), "expected tool call to replay into active UI state")
+        try expect(state.usage.total == 2000, "expected token usage to replay into UI state")
+        try expect(state.permissions.first?.rateLimit.used == 85, "expected rate limit to replay into UI state")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
