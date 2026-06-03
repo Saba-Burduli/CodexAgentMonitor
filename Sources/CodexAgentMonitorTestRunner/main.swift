@@ -256,13 +256,22 @@ struct CodexAgentMonitorTestRunner {
             {"timestamp":"2026-06-03T10:01:05.000Z","type":"response_item","payload":{"type":"reasoning","summary":[],"content":null,"encrypted_content":"redacted"}}
             """,
             """
-            {"timestamp":"2026-06-03T10:01:06.000Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn-1"}}
+            {"timestamp":"2026-06-03T10:01:06.000Z","type":"event_msg","payload":{"type":"thread_goal_updated","objective":"Verify session mirroring"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:07.000Z","type":"event_msg","payload":{"type":"context_compacted"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:08.000Z","type":"compacted","payload":{}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:09.000Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn-1"}}
             """
         ]
 
         state.apply(lines.flatMap { CodexSessionEventMapper.events(from: $0) })
 
-        try expect(state.agents.contains(where: { $0.id == "codex-thread" && $0.currentTask == "Codex reasoning" }), "expected reasoning record to mirror as thread activity")
+        try expect(state.agents.contains(where: { $0.id == "codex-thread" && $0.currentTask == "Codex context compacted" }), "expected compaction record to mirror as thread activity")
         try expect(state.agents.first(where: { $0.id == "turn-1" })?.status == .error, "expected aborted turn to mirror as error")
         try expect(state.diagnostics.contains("turn-1: Codex turn aborted"), "expected aborted turn diagnostic")
     }
