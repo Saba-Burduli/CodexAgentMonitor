@@ -17,6 +17,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Native SwiftUI `MenuBarExtra` app for macOS.
 - Health status icon model: healthy, warning, critical.
 - Active agent list with ID, name, status, task, start time, duration, and activity.
+- Recent session activity history in the menu UI for mirrored Codex thread/session records.
 - Token/quota usage display for 5-hour and 7-day windows, total, remaining, and trend.
 - Permission scope display with allowed operations, rate limits, and warnings.
 - Diagnostics panel for warning and critical conditions.
@@ -41,6 +42,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Codex session mirror CLI via `CodexAgentMonitorSessionMirror`, including `--session` and `--event-log` options.
 - Codex session mirror follow mode via `--follow`, with bounded `--max-polls` support for deterministic smoke tests.
 - Shared core `EventLogReader`, so app UI polling and verification tests replay the same event-log state path.
+- Shared core `SessionActivity` state and `session_activity_recorded` events with bounded recent-history retention.
 - Mirrored-session replay test proving mapped Codex session events reduce into active agents, usage metrics, and permission/rate-limit state.
 - Session mirror smoke script validating one-shot import and live appended-line follow behavior.
 - Context docs: `AGENTS.md`, `SYSTEM.md`, `PROJECT_STATUS.md`, `README.md`, and `docs/`.
@@ -56,7 +58,7 @@ Latest local verification command:
 Latest known result:
 
 ```text
-CodexAgentMonitorTestRunner: 10 tests passed
+CodexAgentMonitorTestRunner: 11 tests passed
 CodexAgentMonitorE2ERunner: passed
 CodexAgentMonitor session mirror smoke passed
 events_processed=16

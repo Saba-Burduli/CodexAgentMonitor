@@ -31,7 +31,8 @@ Future integrations should write events into the JSONL file or expose an equival
 2. `EventLogReader` reads the file on a short polling interval.
 3. `EventCodec` decodes valid lines and skips malformed lines.
 4. `MonitorState.apply(_:)` reduces events into current agents, usage, permissions, diagnostics, and health.
-5. SwiftUI renders the latest state in the menu bar.
+5. `session_activity_recorded` events retain a bounded recent history for message/context records that should remain visible after the current agent row changes.
+6. SwiftUI renders the latest state in the menu bar.
 
 ## Orchestrated Self-Test
 

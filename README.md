@@ -9,6 +9,7 @@ This project does not modify Codex and does not control external systems. It obs
 - Native macOS menu-bar app using SwiftUI `MenuBarExtra`.
 - Health icon states: green healthy, yellow high usage, red critical/blocked.
 - Active agent list with ID, name, status, task, start time, duration, and activity.
+- Recent Codex session activity history for mirrored messages, context, goals, reasoning markers, and compaction records.
 - Usage metrics for last 5 hours, last 7 days, total usage, remaining quota, and trend.
 - Permission scope and rate-limit display per agent.
 - Diagnostics panel for permission and quota warnings.
@@ -122,6 +123,7 @@ Supported event types:
 - `agent_error`
 - `token_usage_updated`
 - `permission_warning_triggered`
+- `session_activity_recorded`
 
 Example:
 
