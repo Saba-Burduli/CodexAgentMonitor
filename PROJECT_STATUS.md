@@ -35,6 +35,8 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Material-backed menu health header with native visual emphasis.
 - UI smoke assertions that require the menu accessibility identifiers used by automation.
 - Local ad-hoc signed `.app` bundle build via `script/build_app.sh`.
+- Settings now opens as a de-duplicated, focusable, closable tab beside Overview.
+- UI smoke checks include the tab container and dynamic tab identifier expression.
 - Context docs: `AGENTS.md`, `SYSTEM.md`, `PROJECT_STATUS.md`, `README.md`, and `docs/`.
 
 ## Verification

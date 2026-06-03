@@ -13,6 +13,7 @@ This project does not modify Codex and does not control external systems. It obs
 - Permission scope and rate-limit display per agent.
 - Diagnostics panel for permission and quota warnings.
 - Demo telemetry when no event log exists.
+- Settings opens as a tab beside Overview and focuses the existing Settings tab if already open.
 
 ## Requirements
 
