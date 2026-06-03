@@ -3,12 +3,84 @@ import SwiftUI
 
 struct MonitorMenuView: View {
     @ObservedObject var model: MonitorViewModel
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HeaderView(health: model.state.health, isDemoMode: model.isDemoMode)
+            MonitorTabBar(model: model)
 
+            switch model.tabs.selected {
+            case .overview:
+                OverviewTabView(model: model)
+            case .settings:
+                SettingsView(model: model)
+                    .frame(minHeight: 280)
+            }
+
+            Divider()
+
+            HStack {
+                Button("Refresh") { model.refresh() }
+                Button("Settings") { model.openSettingsTab() }
+                Spacer()
+                Button("Quit") { NSApp.terminate(nil) }
+            }
+        }
+        .padding(16)
+        .accessibilityIdentifier("monitor.menu.root")
+    }
+}
+
+private struct MonitorTabBar: View {
+    @ObservedObject var model: MonitorViewModel
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(model.tabs.tabs) { tab in
+                MonitorTabItem(
+                    tab: tab,
+                    isSelected: model.tabs.selected == tab.kind,
+                    select: { model.selectTab(tab.kind) },
+                    close: { model.closeTab(tab.kind) }
+                )
+            }
+            Spacer()
+        }
+        .accessibilityIdentifier("monitor.tabs")
+    }
+}
+
+private struct MonitorTabItem: View {
+    var tab: MonitorTab
+    var isSelected: Bool
+    var select: () -> Void
+    var close: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button(tab.title, action: select)
+                .buttonStyle(.plain)
+                .font(.caption.weight(isSelected ? .bold : .regular))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+
+            if tab.isClosable {
+                Button("x", action: close)
+                    .buttonStyle(.plain)
+                    .font(.caption2.weight(.bold))
+                    .accessibilityLabel("Close \(tab.title)")
+            }
+        }
+        .background(isSelected ? Color.secondary.opacity(0.16) : Color.clear, in: Capsule())
+        .accessibilityIdentifier("monitor.tab.\(tab.kind.rawValue)")
+    }
+}
+
+private struct OverviewTabView: View {
+    @ObservedObject var model: MonitorViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
             SectionHeader(title: "Active Agents", value: "\(model.state.activeAgents.count)")
             if model.state.activeAgents.isEmpty {
                 EmptyStateView(text: "No active agents reported")
@@ -25,18 +97,8 @@ struct MonitorMenuView: View {
 
             SectionHeader(title: "Diagnostics", value: model.state.health.label)
             DiagnosticsView(state: model.state)
-
-            Divider()
-
-            HStack {
-                Button("Refresh") { model.refresh() }
-                Button("Settings") { openSettings() }
-                Spacer()
-                Button("Quit") { NSApp.terminate(nil) }
-            }
         }
-        .padding(16)
-        .accessibilityIdentifier("monitor.menu.root")
+        .accessibilityIdentifier("monitor.tab.overview.content")
     }
 }
 

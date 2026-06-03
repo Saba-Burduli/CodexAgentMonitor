@@ -7,6 +7,7 @@ final class MonitorViewModel: ObservableObject {
     @Published private(set) var state: MonitorState
     @Published var eventLogPath: String
     @Published var isDemoMode = true
+    @Published var tabs = MonitorTabState()
 
     nonisolated(unsafe) private var timer: Timer?
 
@@ -40,6 +41,18 @@ final class MonitorViewModel: ObservableObject {
         let url = URL(fileURLWithPath: (eventLogPath as NSString).expandingTildeInPath).deletingLastPathComponent()
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    func openSettingsTab() {
+        tabs.open(.settings)
+    }
+
+    func selectTab(_ kind: MonitorTabKind) {
+        tabs.select(kind)
+    }
+
+    func closeTab(_ kind: MonitorTabKind) {
+        tabs.close(kind)
     }
 
     static let defaultEventLogPath = "~/.codex-agent-monitor/events.jsonl"
