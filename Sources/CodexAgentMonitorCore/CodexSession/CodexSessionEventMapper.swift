@@ -18,19 +18,19 @@ public enum CodexSessionEventMapper {
         case "response_item":
             return events(fromResponseItem: payload, timestamp: timestamp)
         case "session_meta":
-            return [threadActivity(
+            return threadEvents(
                 task: "Codex session metadata",
                 activity: "Session \(string(payload["id"]) ?? "unknown") from \(string(payload["source"]) ?? "unknown source")",
                 timestamp: timestamp
-            )]
+            )
         case "turn_context":
-            return [threadActivity(
+            return threadEvents(
                 task: "Codex turn context",
                 activity: "Turn \(string(payload["turn_id"]) ?? "unknown") in \(string(payload["cwd"]) ?? "unknown workspace")",
                 timestamp: timestamp
-            )]
+            )
         case "compacted":
-            return [threadActivity(task: "Codex context compacted", activity: "Compacted session context", timestamp: timestamp)]
+            return threadEvents(task: "Codex context compacted", activity: "Compacted session context", timestamp: timestamp)
         default:
             return []
         }
@@ -81,16 +81,16 @@ public enum CodexSessionEventMapper {
                 activity: string(payload["query"]) ?? actionSummary(payload["action"]) ?? "Web search completed"
             ))]
         case "user_message":
-            return [threadActivity(task: "User message", activity: excerpt(string(payload["message"]) ?? "User message recorded"), timestamp: timestamp)]
+            return threadEvents(task: "User message", activity: excerpt(string(payload["message"]) ?? "User message recorded"), timestamp: timestamp)
         case "agent_message":
-            return [threadActivity(task: "Agent message", activity: excerpt(string(payload["message"]) ?? "Agent message recorded"), timestamp: timestamp)]
+            return threadEvents(task: "Agent message", activity: excerpt(string(payload["message"]) ?? "Agent message recorded"), timestamp: timestamp)
         case "thread_goal_updated":
-            return [threadActivity(task: "Thread goal updated", activity: excerpt(string(payload["objective"]) ?? string(payload["goal"]) ?? "Thread goal updated"), timestamp: timestamp)]
+            return threadEvents(task: "Thread goal updated", activity: excerpt(string(payload["objective"]) ?? string(payload["goal"]) ?? "Thread goal updated"), timestamp: timestamp)
         case "turn_aborted":
             let turnID = payload["turn_id"] as? String ?? "codex-thread"
             return [.agentError(agentId: turnID, updatedAt: timestamp, activity: "Codex turn aborted")]
         case "context_compacted":
-            return [threadActivity(task: "Codex context compacted", activity: "Context compaction completed", timestamp: timestamp)]
+            return threadEvents(task: "Codex context compacted", activity: "Context compaction completed", timestamp: timestamp)
         default:
             return []
         }
@@ -130,9 +130,9 @@ public enum CodexSessionEventMapper {
             ))]
         case "message":
             let role = string(payload["role"]) ?? "message"
-            return [threadActivity(task: "Codex \(role) message", activity: excerpt(messageText(payload["content"]) ?? "\(role) message recorded"), timestamp: timestamp)]
+            return threadEvents(task: "Codex \(role) message", activity: excerpt(messageText(payload["content"]) ?? "\(role) message recorded"), timestamp: timestamp)
         case "reasoning":
-            return [threadActivity(task: "Codex reasoning", activity: reasoningSummary(payload) ?? "Reasoning item recorded", timestamp: timestamp)]
+            return threadEvents(task: "Codex reasoning", activity: reasoningSummary(payload) ?? "Reasoning item recorded", timestamp: timestamp)
         default:
             return []
         }
@@ -224,6 +224,18 @@ public enum CodexSessionEventMapper {
             updatedAt: timestamp,
             activity: activity
         ))
+    }
+
+    private static func threadEvents(task: String, activity: String, timestamp: Date) -> [MonitorEvent] {
+        [
+            .sessionActivityRecorded(SessionActivity(
+                timestamp: timestamp,
+                category: "codex_session",
+                title: task,
+                detail: activity
+            )),
+            threadActivity(task: task, activity: activity, timestamp: timestamp)
+        ]
     }
 
     private static func messageText(_ value: Any?) -> String? {

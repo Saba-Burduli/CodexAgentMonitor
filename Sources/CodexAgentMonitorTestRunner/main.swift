@@ -290,6 +290,9 @@ struct CodexAgentMonitorTestRunner {
         state.apply(lines.flatMap { CodexSessionEventMapper.events(from: $0) })
 
         try expect(state.agents.contains(where: { $0.id == "codex-thread" && $0.currentTask == "Codex context compacted" }), "expected compaction record to mirror as thread activity")
+        try expect(state.sessionActivities.count == 9, "expected message and context records to persist in session activity history")
+        try expect(state.sessionActivities.contains(where: { $0.title == "User message" && $0.detail == "Build the monitor" }), "expected user message to persist in activity history")
+        try expect(state.sessionActivities.contains(where: { $0.title == "Codex reasoning" }), "expected reasoning marker to persist in activity history")
         try expect(state.agents.first(where: { $0.id == "turn-1" })?.status == .error, "expected aborted turn to mirror as error")
         try expect(state.diagnostics.contains("turn-1: Codex turn aborted"), "expected aborted turn diagnostic")
     }
