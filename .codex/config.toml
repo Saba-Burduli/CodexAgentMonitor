@@ -1,0 +1,5 @@
+model_reasoning_effort = "low"
+model_reasoning_summary = "concise"
+
+# Optional: use medium only when needed
+# model_reasoning_effort = "medium"
