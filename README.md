@@ -14,6 +14,7 @@ This project does not modify Codex and does not control external systems. It obs
 - Diagnostics panel for permission and quota warnings.
 - Demo telemetry when no event log exists.
 - Settings opens as a tab beside Overview and focuses the existing Settings tab if already open.
+- Codex session JSONL mirror for importing local `~/.codex/sessions` telemetry into the app event log.
 
 ## Requirements
 
@@ -71,6 +72,22 @@ For one-shot validation:
 
 ```sh
 swift run CodexAgentMonitorIngestDaemon -- --once --port 8765
+```
+
+## Codex Session Mirror
+
+Import a real Codex session JSONL file into the app-readable event log:
+
+```sh
+swift run CodexAgentMonitorSessionMirror -- --session ~/.codex/sessions/YYYY/MM/DD/rollout-file.jsonl
+```
+
+If `--session` is omitted, the mirror imports the most recently modified `.jsonl` file under `~/.codex/sessions`.
+
+For isolated validation without touching the live app feed:
+
+```sh
+swift run CodexAgentMonitorSessionMirror -- --session ~/.codex/sessions/YYYY/MM/DD/rollout-file.jsonl --event-log /tmp/codex-agent-monitor-events.jsonl
 ```
 
 ## Event Log Contract

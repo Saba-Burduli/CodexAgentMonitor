@@ -8,6 +8,7 @@ CodexAgentMonitor is intentionally split into a UI shell and a testable observab
 - `CodexAgentMonitorCore`: models, event decoding, state reducer, demo telemetry, and health rules.
 - `CodexAgentMonitorTestRunner`: executable core checks for lifecycle, usage, permission, and event-codec behavior.
 - `CodexAgentMonitorE2ERunner`: orchestrated simulation with an Orchestrator Agent and Tester Agent.
+- `CodexAgentMonitorSessionMirror`: observe-only adapter that maps local Codex session JSONL records into `MonitorEvent` JSONL.
 
 ## Observability Boundary
 
@@ -21,6 +22,8 @@ The app must not:
 - assume access to private OpenAI infrastructure.
 
 Future integrations should write events into the JSONL file or expose an equivalent local API that can be adapted into `MonitorEvent` values.
+
+`CodexAgentMonitorSessionMirror` is the first local Codex adapter. It reads a selected or latest `~/.codex/sessions/**/*.jsonl` file and appends mapped lifecycle, tool, patch, web-search, token, and rate-limit events to the same event log consumed by the app. It does not execute Codex, control agents, or mutate the source session.
 
 ## Event Flow
 
