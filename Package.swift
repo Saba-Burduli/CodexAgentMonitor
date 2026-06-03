@@ -13,6 +13,7 @@ let package = Package(
         .executable(name: "CodexAgentMonitorE2ERunner", targets: ["CodexAgentMonitorE2ERunner"]),
         .executable(name: "CodexAgentMonitorEventWriter", targets: ["CodexAgentMonitorEventWriter"]),
         .executable(name: "CodexAgentMonitorIngestDaemon", targets: ["CodexAgentMonitorIngestDaemon"]),
+        .executable(name: "CodexAgentMonitorSessionMirror", targets: ["CodexAgentMonitorSessionMirror"]),
         .library(name: "CodexAgentMonitorCore", targets: ["CodexAgentMonitorCore"])
     ],
     targets: [
@@ -35,6 +36,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "CodexAgentMonitorIngestDaemon",
+            dependencies: ["CodexAgentMonitorCore"]
+        ),
+        .executableTarget(
+            name: "CodexAgentMonitorSessionMirror",
             dependencies: ["CodexAgentMonitorCore"]
         )
     ],
