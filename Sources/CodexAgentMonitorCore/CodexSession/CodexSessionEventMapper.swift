@@ -6,17 +6,31 @@ public enum CodexSessionEventMapper {
             let data = line.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
             let timestamp = date(from: object["timestamp"] as? String),
-            let recordType = object["type"] as? String,
-            let payload = object["payload"] as? [String: Any]
+            let recordType = object["type"] as? String
         else {
             return []
         }
+        let payload = object["payload"] as? [String: Any] ?? [:]
 
         switch recordType {
         case "event_msg":
             return events(fromEventMessage: payload, timestamp: timestamp)
         case "response_item":
             return events(fromResponseItem: payload, timestamp: timestamp)
+        case "session_meta":
+            return [threadActivity(
+                task: "Codex session metadata",
+                activity: "Session \(string(payload["id"]) ?? "unknown") from \(string(payload["source"]) ?? "unknown source")",
+                timestamp: timestamp
+            )]
+        case "turn_context":
+            return [threadActivity(
+                task: "Codex turn context",
+                activity: "Turn \(string(payload["turn_id"]) ?? "unknown") in \(string(payload["cwd"]) ?? "unknown workspace")",
+                timestamp: timestamp
+            )]
+        case "compacted":
+            return [threadActivity(task: "Codex context compacted", activity: "Compacted session context", timestamp: timestamp)]
         default:
             return []
         }
@@ -66,6 +80,17 @@ public enum CodexSessionEventMapper {
                 updatedAt: timestamp,
                 activity: string(payload["query"]) ?? actionSummary(payload["action"]) ?? "Web search completed"
             ))]
+        case "user_message":
+            return [threadActivity(task: "User message", activity: excerpt(string(payload["message"]) ?? "User message recorded"), timestamp: timestamp)]
+        case "agent_message":
+            return [threadActivity(task: "Agent message", activity: excerpt(string(payload["message"]) ?? "Agent message recorded"), timestamp: timestamp)]
+        case "thread_goal_updated":
+            return [threadActivity(task: "Thread goal updated", activity: excerpt(string(payload["objective"]) ?? string(payload["goal"]) ?? "Thread goal updated"), timestamp: timestamp)]
+        case "turn_aborted":
+            let turnID = payload["turn_id"] as? String ?? "codex-thread"
+            return [.agentError(agentId: turnID, updatedAt: timestamp, activity: "Codex turn aborted")]
+        case "context_compacted":
+            return [threadActivity(task: "Codex context compacted", activity: "Context compaction completed", timestamp: timestamp)]
         default:
             return []
         }
@@ -103,6 +128,11 @@ public enum CodexSessionEventMapper {
                 updatedAt: timestamp,
                 activity: action
             ))]
+        case "message":
+            let role = string(payload["role"]) ?? "message"
+            return [threadActivity(task: "Codex \(role) message", activity: excerpt(messageText(payload["content"]) ?? "\(role) message recorded"), timestamp: timestamp)]
+        case "reasoning":
+            return [threadActivity(task: "Codex reasoning", activity: reasoningSummary(payload) ?? "Reasoning item recorded", timestamp: timestamp)]
         default:
             return []
         }
@@ -182,5 +212,40 @@ public enum CodexSessionEventMapper {
             return queries.joined(separator: ", ")
         }
         return string(action["type"])
+    }
+
+    private static func threadActivity(task: String, activity: String, timestamp: Date) -> MonitorEvent {
+        .agentStatusUpdate(AgentTelemetry(
+            id: "codex-thread",
+            name: "Codex Thread",
+            status: .running,
+            currentTask: task,
+            startedAt: timestamp,
+            updatedAt: timestamp,
+            activity: activity
+        ))
+    }
+
+    private static func messageText(_ value: Any?) -> String? {
+        if let text = string(value) {
+            return text
+        }
+        guard let parts = value as? [[String: Any]] else { return nil }
+        let text = parts.compactMap { string($0["text"]) }.joined(separator: " ")
+        return text.isEmpty ? nil : text
+    }
+
+    private static func reasoningSummary(_ payload: [String: Any]) -> String? {
+        guard let summaries = payload["summary"] as? [[String: Any]] else { return nil }
+        let text = summaries.compactMap { string($0["text"]) }.joined(separator: " ")
+        return text.isEmpty ? nil : excerpt(text)
+    }
+
+    private static func excerpt(_ value: String, limit: Int = 240) -> String {
+        if value.count <= limit {
+            return value
+        }
+        let end = value.index(value.startIndex, offsetBy: limit)
+        return "\(value[..<end])..."
     }
 }

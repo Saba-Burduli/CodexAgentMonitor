@@ -12,8 +12,9 @@ struct CodexAgentMonitorTestRunner {
         try testHTTPIngestRequestValidation()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
+        try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 9 tests passed")
+        print("CodexAgentMonitorTestRunner: 10 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -231,6 +232,39 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.activeAgents.contains(where: { $0.id == "tool-call_reader" }), "expected tool call to replay into active UI state")
         try expect(state.usage.total == 2000, "expected token usage to replay into UI state")
         try expect(state.permissions.first?.rateLimit.used == 85, "expected rate limit to replay into UI state")
+    }
+
+    private static func testCodexSessionMapperMirrorsMessagesAndContext() throws {
+        var state = MonitorState()
+        let lines = [
+            """
+            {"timestamp":"2026-06-03T10:01:00.000Z","type":"session_meta","payload":{"id":"session-1","source":"cli"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:01.000Z","type":"turn_context","payload":{"turn_id":"turn-1","cwd":"/tmp/project"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"Build the monitor"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:03.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Reading project files"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:04.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Implemented the mapper"}]}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:05.000Z","type":"response_item","payload":{"type":"reasoning","summary":[],"content":null,"encrypted_content":"redacted"}}
+            """,
+            """
+            {"timestamp":"2026-06-03T10:01:06.000Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn-1"}}
+            """
+        ]
+
+        state.apply(lines.flatMap { CodexSessionEventMapper.events(from: $0) })
+
+        try expect(state.agents.contains(where: { $0.id == "codex-thread" && $0.currentTask == "Codex reasoning" }), "expected reasoning record to mirror as thread activity")
+        try expect(state.agents.first(where: { $0.id == "turn-1" })?.status == .error, "expected aborted turn to mirror as error")
+        try expect(state.diagnostics.contains("turn-1: Codex turn aborted"), "expected aborted turn diagnostic")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
