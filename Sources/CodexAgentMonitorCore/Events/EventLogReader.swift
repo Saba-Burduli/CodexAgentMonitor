@@ -1,10 +1,13 @@
-import CodexAgentMonitorCore
 import Foundation
 
-struct EventLogReader {
-    var url: URL
+public struct EventLogReader {
+    public var url: URL
 
-    func readState() -> MonitorState? {
+    public init(url: URL) {
+        self.url = url
+    }
+
+    public func readState() -> MonitorState? {
         guard let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .utf8) else {
             return nil
         }
