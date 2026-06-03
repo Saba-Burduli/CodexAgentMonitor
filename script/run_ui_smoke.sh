@@ -31,6 +31,13 @@ grep -q '"type":"agent_error"' "$EVENT_LOG"
 grep -q '"activity":"Simulated tool failure handled safely"' "$EVENT_LOG"
 grep -q '"type":"token_usage_updated"' "$EVENT_LOG"
 
+NOW="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+cat >> "$EVENT_LOG" <<JSONL
+{"type":"session_activity_recorded","sessionActivity":{"id":"ui-smoke-session-activity","timestamp":"$NOW","category":"codex_session","title":"UI smoke session activity","detail":"Session activity visible in menu state"}}
+JSONL
+grep -q '"type":"session_activity_recorded"' "$EVENT_LOG"
+grep -q '"id":"ui-smoke-session-activity"' "$EVENT_LOG"
+
 pkill -x CodexAgentMonitor 2>/dev/null || true
 swift run --package-path "$ROOT_DIR" CodexAgentMonitor > "$APP_LOG" 2>&1 &
 echo $! > "$PID_FILE"
