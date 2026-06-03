@@ -20,6 +20,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Recent session activity history in the menu UI for mirrored Codex thread/session records.
 - Token/quota usage display for 5-hour and 7-day windows, total, remaining, and trend.
 - Permission scope display with allowed operations, rate limits, and warnings.
+- Observe-only policy guard that removes forbidden permission operations and surfaces policy violations as diagnostics.
 - Diagnostics panel for warning and critical conditions.
 - Settings panel for event log path and health-rule explanation.
 - JSONL event contract at `~/.codex-agent-monitor/events.jsonl`.
@@ -29,6 +30,7 @@ https://github.com/Saba-Burduli/CodexAgentMonitor
 - Orchestrated E2E simulation via `CodexAgentMonitorE2ERunner` with simulated Orchestrator, Tester, Constraint Audit, and Session Mirror Validation agents.
 - Menu-bar UI smoke runner via `script/run_ui_smoke.sh`.
 - UI smoke checks for expected tester-agent events, final error transition, app process visibility, and screenshot artifact creation.
+- UI policy summary showing whether the observe-only boundary is intact.
 - Local HTTP ingest daemon via `CodexAgentMonitorIngestDaemon` for appending posted events to the JSONL feed.
 - Request-level HTTP ingest validation for method, path, content length, and event JSON decoding.
 - Configurable sample event writer arguments for ID, name, status, task, and activity.
@@ -73,6 +75,7 @@ Runtime smoke completed earlier with `swift run CodexAgentMonitor`; the app proc
 ## Known Constraints
 
 - The app is observe-only and does not control Codex agents.
+- Forbidden control-style operations are sanitized from reported permission scopes and shown as critical diagnostics.
 - Real Codex token/quota data requires an explicit external integration layer to emit events.
 - Real Codex session import is a local CLI adapter. Live mirroring requires running `CodexAgentMonitorSessionMirror --follow` beside the app.
 - The local Command Line Tools environment cannot import XCTest or Testing, so tests are implemented through an executable runner.
@@ -81,4 +84,6 @@ Runtime smoke completed earlier with `swift run CodexAgentMonitor`; the app proc
 
 ## Next Priorities
 
-1. Add a future opt-in enforcement protocol only if explicitly requested.
+1. Add persistent launch helper instructions for running the menu-bar app plus session mirror follow mode together.
+2. Add a diagnostics export command for sharing current app state and policy violations.
+3. Add a future opt-in enforcement protocol only if explicitly requested.

@@ -14,6 +14,8 @@ CodexAgentMonitor is intentionally split into a UI shell and a testable observab
 
 The app reads append-only JSONL events from `~/.codex-agent-monitor/events.jsonl` by default. This is the integration layer between Codex/proxy tooling and the menu-bar UI.
 
+The boundary is also represented in code by `ObserveOnlyPolicy`. Incoming permission scopes are sanitized by `MonitorState` before storage: forbidden control operations are removed from `allowedOperations`, warnings are attached, diagnostics are emitted, and health becomes critical through the existing permission-warning rule.
+
 The app must not:
 
 - modify Codex internals;
