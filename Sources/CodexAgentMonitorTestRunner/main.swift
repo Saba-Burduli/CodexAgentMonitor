@@ -10,11 +10,12 @@ struct CodexAgentMonitorTestRunner {
         try testJSONLinesDecodeEvents()
         try testStructuredLifecycleAliases()
         try testHTTPIngestRequestValidation()
+        try testSessionActivityEventsReplayIntoState()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 10 tests passed")
+        print("CodexAgentMonitorTestRunner: 11 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -137,6 +138,23 @@ struct CodexAgentMonitorTestRunner {
             throw TestFailure(message: "expected bad path rejection")
         } catch HTTPIngestRequestError.unsupportedPath {
         }
+    }
+
+    private static func testSessionActivityEventsReplayIntoState() throws {
+        let activity = SessionActivity(
+            timestamp: Date(timeIntervalSince1970: 3_000),
+            category: "message",
+            title: "Agent message",
+            detail: "Reading project files"
+        )
+        let line = try EventCodec.encodeJSONLine(.sessionActivityRecorded(activity))
+        let events = EventCodec.decodeJSONLines(line)
+
+        var state = MonitorState()
+        state.apply(events)
+
+        try expect(state.sessionActivities == [activity], "expected session activity to replay into state")
+        try expect(state.lastEventAt == activity.timestamp, "expected session activity timestamp to update last event")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {

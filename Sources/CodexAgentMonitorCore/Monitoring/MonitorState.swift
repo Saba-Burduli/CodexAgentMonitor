@@ -5,6 +5,7 @@ public struct MonitorState: Equatable, Sendable {
     public var usage: UsageMetrics
     public var permissions: [PermissionScope]
     public var diagnostics: [String]
+    public var sessionActivities: [SessionActivity]
     public var lastEventAt: Date?
 
     public init(
@@ -12,12 +13,14 @@ public struct MonitorState: Equatable, Sendable {
         usage: UsageMetrics = UsageMetrics(),
         permissions: [PermissionScope] = [],
         diagnostics: [String] = [],
+        sessionActivities: [SessionActivity] = [],
         lastEventAt: Date? = nil
     ) {
         self.agents = agents
         self.usage = usage
         self.permissions = permissions
         self.diagnostics = diagnostics
+        self.sessionActivities = sessionActivities
         self.lastEventAt = lastEventAt
     }
 
@@ -71,6 +74,10 @@ public struct MonitorState: Equatable, Sendable {
             upsert(scope)
             diagnostics.append(contentsOf: scope.warnings.map { "\(scope.agentId): \($0)" })
             lastEventAt = Date()
+        case .sessionActivityRecorded(let activity):
+            sessionActivities.append(activity)
+            sessionActivities = Array(sessionActivities.suffix(200))
+            lastEventAt = activity.timestamp
         }
     }
 

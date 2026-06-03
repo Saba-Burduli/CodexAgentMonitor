@@ -251,6 +251,7 @@ private func eventLogName(_ event: MonitorEvent) -> String {
     case .agentError: "agent_error"
     case .tokenUsageUpdated: "token_usage_updated"
     case .permissionWarningTriggered: "permission_warning_triggered"
+    case .sessionActivityRecorded: "session_activity_recorded"
     }
 }
 

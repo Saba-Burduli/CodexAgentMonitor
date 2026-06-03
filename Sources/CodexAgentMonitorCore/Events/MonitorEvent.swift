@@ -9,6 +9,7 @@ public enum MonitorEvent: Equatable, Sendable {
     case agentError(agentId: String, updatedAt: Date, activity: String)
     case tokenUsageUpdated(UsageMetrics)
     case permissionWarningTriggered(PermissionScope)
+    case sessionActivityRecorded(SessionActivity)
 }
 
 extension MonitorEvent: Codable {
@@ -21,6 +22,7 @@ extension MonitorEvent: Codable {
         case activity
         case usage
         case permission
+        case sessionActivity
     }
 
     private enum EventType: String, Codable {
@@ -32,6 +34,7 @@ extension MonitorEvent: Codable {
         case agentError = "agent_error"
         case tokenUsageUpdated = "token_usage_updated"
         case permissionWarningTriggered = "permission_warning_triggered"
+        case sessionActivityRecorded = "session_activity_recorded"
     }
 
     public init(from decoder: Decoder) throws {
@@ -68,6 +71,8 @@ extension MonitorEvent: Codable {
             self = .tokenUsageUpdated(try container.decode(UsageMetrics.self, forKey: .usage))
         case .permissionWarningTriggered:
             self = .permissionWarningTriggered(try container.decode(PermissionScope.self, forKey: .permission))
+        case .sessionActivityRecorded:
+            self = .sessionActivityRecorded(try container.decode(SessionActivity.self, forKey: .sessionActivity))
         }
     }
 
@@ -106,6 +111,9 @@ extension MonitorEvent: Codable {
         case .permissionWarningTriggered(let permission):
             try container.encode(EventType.permissionWarningTriggered, forKey: .type)
             try container.encode(permission, forKey: .permission)
+        case .sessionActivityRecorded(let sessionActivity):
+            try container.encode(EventType.sessionActivityRecorded, forKey: .type)
+            try container.encode(sessionActivity, forKey: .sessionActivity)
         }
     }
 }
