@@ -13,11 +13,12 @@ struct CodexAgentMonitorTestRunner {
         try testSessionActivityEventsReplayIntoState()
         try testObserveOnlyPolicySanitizesForbiddenOperations()
         try testCodexDashboardTokenDerivedValues()
+        try testMonitorStateCodexDashboardAdapter()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 13 tests passed")
+        print("CodexAgentMonitorTestRunner: 14 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -203,6 +204,37 @@ struct CodexAgentMonitorTestRunner {
 
         try expect(agent.files.first?.activity == .editing, "expected file activity")
         try expect(agent.reasoningMode == .high, "expected reasoning mode")
+    }
+
+    private static func testMonitorStateCodexDashboardAdapter() throws {
+        let now = Date(timeIntervalSince1970: 4_000)
+        var state = MonitorState()
+        state.apply(.agentStarted(AgentTelemetry(
+            id: "turn-1",
+            name: "Codex Thread",
+            status: .running,
+            currentTask: "Codex session turn started",
+            startedAt: now,
+            updatedAt: now,
+            activity: "Editing TokenProvider"
+        )))
+        state.apply(.tokenUsageUpdated(UsageMetrics(
+            window5h: 1_200,
+            window7d: 9_000,
+            total: 12_000,
+            remaining: 188_000,
+            trend: .rising,
+            updatedAt: now
+        )))
+
+        let adapter = MonitorStateCodexDashboardAdapter(state: state)
+        let agents = try adapter.agentStatuses()
+        let sessions = try adapter.sessions()
+
+        try expect(agents.first?.sessionId == "turn-1", "expected Codex thread session id")
+        try expect(agents.first?.currentAction == "Editing TokenProvider", "expected current action")
+        try expect(agents.first?.tokenStatus?.currentTaskTokens == 1_200, "expected token status")
+        try expect(sessions.first?.id == "turn-1", "expected session status")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {
