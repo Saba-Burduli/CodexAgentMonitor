@@ -85,5 +85,11 @@ final class MonitorViewModel: ObservableObject {
         selectedSessionId = id.isEmpty ? nil : id
     }
 
+    func setSkill(_ name: String, enabled: Bool) {
+        let skillsURL = repositoryURL.appendingPathComponent(".agents/skills")
+        try? LocalSkillStatusProvider(skillsRootURL: skillsURL).setSkill(name, enabled: enabled)
+        refreshSkillStatus()
+    }
+
     static let defaultEventLogPath = "~/.codex-agent-monitor/events.jsonl"
 }
