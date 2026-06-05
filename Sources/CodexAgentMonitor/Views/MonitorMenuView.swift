@@ -84,6 +84,7 @@ private struct OverviewTabView: View {
         let agents = (try? adapter.agentStatuses()) ?? []
         let sessions = (try? adapter.sessions()) ?? []
         let tokenStatus = (try? adapter.tokenStatus(for: sessions.first?.id)) ?? nil
+        let permissionStatus = (try? adapter.permissionStatus()) ?? PermissionStatus()
 
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader(title: "Codex Agents", value: "\(agents.count)")
@@ -105,6 +106,9 @@ private struct OverviewTabView: View {
 
             SectionHeader(title: "Latest Git Activity", value: model.gitActivity.isEmpty ? "Unavailable" : "\(model.gitActivity.count)")
             GitActivityList(commits: model.gitActivity, unavailableReason: model.gitActivityUnavailableReason)
+
+            SectionHeader(title: "Permissions", value: "\(permissionStatus.pendingApprovals) pending")
+            PermissionStatusView(status: permissionStatus)
 
             SectionHeader(title: "Recent Codex Activity", value: "\(model.state.sessionActivities.count)")
             SessionActivityList(activities: Array(model.state.sessionActivities.suffix(4).reversed()))
@@ -286,6 +290,37 @@ private struct GitActivityList: View {
             }
         }
         .accessibilityIdentifier("monitor.gitActivity.summary")
+    }
+}
+
+private struct PermissionStatusView: View {
+    var status: PermissionStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
+                GridRow {
+                    MetricCell(label: "Commands", value: status.commandExecution.rawValue.capitalized)
+                    MetricCell(label: "File Writes", value: status.fileWrites.rawValue.capitalized)
+                }
+                GridRow {
+                    MetricCell(label: "Git Push", value: status.gitPush.rawValue.capitalized)
+                    MetricCell(label: "Approvals", value: "\(status.pendingApprovals)")
+                }
+            }
+
+            if status.pendingActions.isEmpty {
+                EmptyStateView(text: "No pending permission warnings")
+            } else {
+                ForEach(status.pendingActions.prefix(3), id: \.self) { action in
+                    Label(action, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .lineLimit(2)
+                }
+            }
+        }
+        .accessibilityIdentifier("monitor.permissions.summary")
     }
 }
 
