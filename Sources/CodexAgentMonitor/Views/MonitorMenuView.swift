@@ -131,6 +131,26 @@ private struct CodexAgentRow: View {
             CodexDetailRow(label: "Model", value: agent.model ?? "Unavailable")
             CodexDetailRow(label: "Reasoning", value: agent.reasoningMode?.rawValue.capitalized ?? "Unavailable")
             CodexDetailRow(label: "Updated", value: relativeTime(from: agent.updatedAt))
+
+            if !agent.files.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Files")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    ForEach(agent.files.prefix(4)) { file in
+                        HStack {
+                            Text(file.path)
+                                .font(.caption2.monospaced())
+                                .lineLimit(1)
+                            Spacer()
+                            Text(file.activity.rawValue.capitalized)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
         }
         .padding(10)
         .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))

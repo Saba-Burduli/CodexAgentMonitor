@@ -20,7 +20,7 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
                     currentAction: agent.activity.isEmpty ? agent.currentTask : agent.activity,
                     model: nil,
                     reasoningMode: nil,
-                    files: [],
+                    files: fileActivities(for: agent),
                     tokenStatus: try? tokenStatus(for: sessionId(for: agent)),
                     updatedAt: agent.updatedAt
                 )
@@ -71,6 +71,46 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
             return "codex-thread"
         }
         return "local-monitor"
+    }
+
+    private func fileActivities(for agent: AgentTelemetry) -> [CodexFileActivity] {
+        let text = "\(agent.currentTask) \(agent.activity)"
+        let kind = fileActivityKind(from: text)
+        let paths = extractFilePaths(from: text)
+        return paths.prefix(4).map { path in
+            CodexFileActivity(path: path, activity: kind, updatedAt: agent.updatedAt)
+        }
+    }
+
+    private func fileActivityKind(from text: String) -> FileActivityKind {
+        let normalized = text.lowercased()
+        if normalized.contains("push") { return .pushing }
+        if normalized.contains("commit") { return .committing }
+        if normalized.contains("stage") || normalized.contains("git add") { return .staging }
+        if normalized.contains("edit") || normalized.contains("patch") || normalized.contains("write") { return .editing }
+        return .reading
+    }
+
+    private func extractFilePaths(from text: String) -> [String] {
+        let tokens = text
+            .split { character in
+                character.isWhitespace || "\"'`,:;()[]{}<>".contains(character)
+            }
+            .map { String($0).trimmingCharacters(in: CharacterSet(charactersIn: "./")) }
+
+        var seen = Set<String>()
+        return tokens.compactMap { token in
+            guard isLikelyFilePath(token), seen.insert(token).inserted else { return nil }
+            return token
+        }
+    }
+
+    private func isLikelyFilePath(_ token: String) -> Bool {
+        let knownExtensions = [
+            ".swift", ".md", ".json", ".toml", ".yml", ".yaml",
+            ".sh", ".txt", ".plist", ".xcodeproj", ".xcworkspace"
+        ]
+        return knownExtensions.contains { token.hasSuffix($0) }
     }
 
     private func percentUsed(consumed: Int, remaining: Int?) -> Double? {

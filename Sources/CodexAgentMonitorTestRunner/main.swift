@@ -216,7 +216,7 @@ struct CodexAgentMonitorTestRunner {
             currentTask: "Codex session turn started",
             startedAt: now,
             updatedAt: now,
-            activity: "Editing TokenProvider"
+            activity: "Editing Sources/CodexAgentMonitorCore/TokenProvider.swift"
         )))
         state.apply(.tokenUsageUpdated(UsageMetrics(
             window5h: 1_200,
@@ -232,7 +232,9 @@ struct CodexAgentMonitorTestRunner {
         let sessions = try adapter.sessions()
 
         try expect(agents.first?.sessionId == "turn-1", "expected Codex thread session id")
-        try expect(agents.first?.currentAction == "Editing TokenProvider", "expected current action")
+        try expect(agents.first?.currentAction == "Editing Sources/CodexAgentMonitorCore/TokenProvider.swift", "expected current action")
+        try expect(agents.first?.files.first?.path == "Sources/CodexAgentMonitorCore/TokenProvider.swift", "expected file activity path")
+        try expect(agents.first?.files.first?.activity == .editing, "expected editing file activity")
         try expect(agents.first?.tokenStatus?.currentTaskTokens == 1_200, "expected token status")
         try expect(sessions.first?.id == "turn-1", "expected session status")
     }
