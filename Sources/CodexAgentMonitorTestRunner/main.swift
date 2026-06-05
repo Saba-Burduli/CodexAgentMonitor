@@ -14,11 +14,12 @@ struct CodexAgentMonitorTestRunner {
         try testObserveOnlyPolicySanitizesForbiddenOperations()
         try testCodexDashboardTokenDerivedValues()
         try testMonitorStateCodexDashboardAdapter()
+        try testLocalGitStatusProviderParsesLogLine()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 14 tests passed")
+        print("CodexAgentMonitorTestRunner: 15 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -237,6 +238,19 @@ struct CodexAgentMonitorTestRunner {
         try expect(agents.first?.files.first?.activity == .editing, "expected editing file activity")
         try expect(agents.first?.tokenStatus?.currentTaskTokens == 1_200, "expected token status")
         try expect(sessions.first?.id == "turn-1", "expected session status")
+    }
+
+    private static func testLocalGitStatusProviderParsesLogLine() throws {
+        let commit = LocalGitStatusProvider.parseLogLine(
+            "a13f92c\u{1f}add token provider\u{1f}2026-06-05T12:30:00Z",
+            branch: "main"
+        )
+
+        try expect(commit?.shortHash == "a13f92c", "expected short hash")
+        try expect(commit?.message == "add token provider", "expected message")
+        try expect(commit?.branch == "main", "expected branch")
+        try expect(commit?.pushStatus == .unavailable, "expected unavailable push status")
+        try expect(commit?.localCommitAt != nil, "expected commit date")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {
