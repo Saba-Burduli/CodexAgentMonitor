@@ -80,28 +80,150 @@ private struct OverviewTabView: View {
     @ObservedObject var model: MonitorViewModel
 
     var body: some View {
+        let adapter = MonitorStateCodexDashboardAdapter(state: model.state)
+        let agents = (try? adapter.agentStatuses()) ?? []
+        let sessions = (try? adapter.sessions()) ?? []
+        let tokenStatus = (try? adapter.tokenStatus(for: sessions.first?.id)) ?? nil
+
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Active Agents", value: "\(model.state.activeAgents.count)")
-            if model.state.activeAgents.isEmpty {
-                EmptyStateView(text: "No active agents reported")
+            SectionHeader(title: "Codex Agents", value: "\(agents.count)")
+            if agents.isEmpty {
+                EmptyStateView(text: "No active Codex agents observed")
             } else {
                 VStack(spacing: 10) {
-                    ForEach(model.state.activeAgents) { agent in
-                        AgentRow(agent: agent, now: Date())
+                    ForEach(agents) { agent in
+                        CodexAgentRow(agent: agent)
                     }
                 }
             }
 
-            SectionHeader(title: "Session Activity", value: "\(model.state.sessionActivities.count)")
-            SessionActivityList(activities: Array(model.state.sessionActivities.suffix(5).reversed()))
+            SectionHeader(title: "Sessions", value: "\(sessions.count)")
+            CodexSessionList(sessions: sessions)
 
-            SectionHeader(title: "Token Usage", value: model.state.usage.trend.rawValue.capitalized)
-            UsageSummaryView(metrics: model.state.usage)
+            SectionHeader(title: "Context", value: tokenStatus?.contextUsedPercent.map { "\(Int($0))%" } ?? "Unavailable")
+            CodexContextView(tokenStatus: tokenStatus)
 
-            SectionHeader(title: "Diagnostics", value: model.state.health.label)
-            DiagnosticsView(state: model.state)
+            SectionHeader(title: "Recent Codex Activity", value: "\(model.state.sessionActivities.count)")
+            SessionActivityList(activities: Array(model.state.sessionActivities.suffix(4).reversed()))
         }
         .accessibilityIdentifier("monitor.tab.overview.content")
+    }
+}
+
+private struct CodexAgentRow: View {
+    var agent: CodexAgentStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Agent: \(agent.displayName)")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Session: \(agent.sessionName ?? agent.sessionId)")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                StatusBadge(status: agent.status)
+            }
+
+            CodexDetailRow(label: "Action", value: agent.currentAction)
+            CodexDetailRow(label: "Model", value: agent.model ?? "Unavailable")
+            CodexDetailRow(label: "Reasoning", value: agent.reasoningMode?.rawValue.capitalized ?? "Unavailable")
+            CodexDetailRow(label: "Updated", value: relativeTime(from: agent.updatedAt))
+        }
+        .padding(10)
+        .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityIdentifier("monitor.codexAgent.\(agent.id)")
+    }
+}
+
+private struct CodexSessionList: View {
+    var sessions: [CodexSessionStatus]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if sessions.isEmpty {
+                EmptyStateView(text: "No Codex sessions observed")
+            } else {
+                ForEach(sessions.prefix(3)) { session in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(session.name ?? session.id)
+                                .font(.caption.weight(.semibold))
+                            Text("\(session.agents.count) agent\(session.agents.count == 1 ? "" : "s")")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(relativeTime(from: session.updatedAt))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(8)
+                    .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+                    .accessibilityIdentifier("monitor.codexSession.\(session.id)")
+                }
+            }
+        }
+        .accessibilityIdentifier("monitor.codexSessions.summary")
+    }
+}
+
+private struct CodexContextView: View {
+    var tokenStatus: TokenStatus?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
+                GridRow {
+                    MetricCell(label: "Task Tokens", value: tokenStatus?.currentTaskTokens?.formatted() ?? "Unavailable")
+                    MetricCell(label: "Context Used", value: contextValue)
+                }
+                GridRow {
+                    MetricCell(label: "5h Limit", value: percentValue(tokenStatus?.fiveHourUsedPercent))
+                    MetricCell(label: "Weekly Limit", value: percentValue(tokenStatus?.weeklyUsedPercent))
+                }
+            }
+
+            if let usedPercent = tokenStatus?.contextUsedPercent {
+                ProgressView(value: max(0, min(1, usedPercent / 100)))
+                    .tint(usedPercent >= 90 ? .red : usedPercent >= 75 ? .yellow : .green)
+                    .accessibilityIdentifier("monitor.codexContext.progress")
+            } else {
+                EmptyStateView(text: "Context window size is unavailable from current Codex telemetry")
+            }
+        }
+        .accessibilityIdentifier("monitor.codexContext.summary")
+    }
+
+    private var contextValue: String {
+        guard let used = tokenStatus?.contextWindowUsed else { return "Unavailable" }
+        guard let limit = tokenStatus?.contextWindowLimit else { return "\(used.formatted()) / Unavailable" }
+        return "\(used.formatted()) / \(limit.formatted())"
+    }
+
+    private func percentValue(_ value: Double?) -> String {
+        guard let value else { return "Unavailable" }
+        return "\(Int(value.rounded()))%"
+    }
+}
+
+private struct CodexDetailRow: View {
+    var label: String
+    var value: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(width: 58, alignment: .leading)
+            Text(value)
+                .font(.caption)
+                .lineLimit(2)
+            Spacer()
+        }
     }
 }
 
@@ -381,4 +503,17 @@ private func formatDuration(_ interval: TimeInterval) -> String {
     }
 
     return "\(seconds)s"
+}
+
+private func relativeTime(from date: Date, now: Date = Date()) -> String {
+    let seconds = max(0, Int(now.timeIntervalSince(date)))
+    if seconds < 60 { return "\(seconds)s ago" }
+
+    let minutes = seconds / 60
+    if minutes < 60 { return "\(minutes)m ago" }
+
+    let hours = minutes / 60
+    if hours < 24 { return "\(hours)h ago" }
+
+    return date.formatted(date: .abbreviated, time: .shortened)
 }
