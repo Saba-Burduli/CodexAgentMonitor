@@ -1,6 +1,6 @@
 import Foundation
 
-public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionStatusProvider, TokenStatusProvider {
+public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionStatusProvider, TokenStatusProvider, PermissionStatusProvider {
     public var state: MonitorState
 
     public init(state: MonitorState) {
@@ -54,6 +54,21 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
             weeklyUsedPercent: nil,
             fiveHourResetAt: nil,
             weeklyResetAt: nil
+        )
+    }
+
+    public func permissionStatus() throws -> PermissionStatus {
+        guard !state.permissions.isEmpty else {
+            return PermissionStatus()
+        }
+
+        let operations = Set(state.permissions.flatMap(\.allowedOperations))
+        return PermissionStatus(
+            commandExecution: operations.contains("run_local_validation") ? .allowed : .unavailable,
+            fileWrites: operations.contains("write_monitor_event_log") ? .allowed : .unavailable,
+            gitPush: operations.contains("git_push") ? .allowed : .unavailable,
+            pendingApprovals: 0,
+            pendingActions: state.permissions.flatMap(\.warnings)
         )
     }
 

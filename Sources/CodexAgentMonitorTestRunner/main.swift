@@ -227,10 +227,17 @@ struct CodexAgentMonitorTestRunner {
             trend: .rising,
             updatedAt: now
         )))
+        state.apply(.permissionWarningTriggered(PermissionScope(
+            agentId: "codex-thread",
+            allowedOperations: ["read_codex_session_jsonl", "write_monitor_event_log", "run_local_validation"],
+            rateLimit: RateLimit(limit: 100, used: 20, window: "5h"),
+            warnings: []
+        )))
 
         let adapter = MonitorStateCodexDashboardAdapter(state: state)
         let agents = try adapter.agentStatuses()
         let sessions = try adapter.sessions()
+        let permissions = try adapter.permissionStatus()
 
         try expect(agents.first?.sessionId == "turn-1", "expected Codex thread session id")
         try expect(agents.first?.currentAction == "Editing Sources/CodexAgentMonitorCore/TokenProvider.swift", "expected current action")
@@ -238,6 +245,9 @@ struct CodexAgentMonitorTestRunner {
         try expect(agents.first?.files.first?.activity == .editing, "expected editing file activity")
         try expect(agents.first?.tokenStatus?.currentTaskTokens == 1_200, "expected token status")
         try expect(sessions.first?.id == "turn-1", "expected session status")
+        try expect(permissions.commandExecution == .allowed, "expected command permission")
+        try expect(permissions.fileWrites == .allowed, "expected file write permission")
+        try expect(permissions.gitPush == .unavailable, "expected unavailable git push permission")
     }
 
     private static func testLocalGitStatusProviderParsesLogLine() throws {
