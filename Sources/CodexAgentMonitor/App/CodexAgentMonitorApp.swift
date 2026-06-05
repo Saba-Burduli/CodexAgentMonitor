@@ -7,7 +7,7 @@ struct CodexAgentMonitorApp: App {
     var body: some Scene {
         MenuBarExtra {
             MonitorMenuView(model: model)
-                .frame(width: 420)
+                .frame(width: 420, height: 760)
         } label: {
             Label("Codex", systemImage: iconName)
         }

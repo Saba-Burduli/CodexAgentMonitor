@@ -23,7 +23,7 @@ struct MonitorMenuView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity)
-            .frame(maxHeight: 640)
+            .frame(height: 540)
             .scrollIndicators(.visible)
             .accessibilityIdentifier("monitor.menu.scroll")
 
