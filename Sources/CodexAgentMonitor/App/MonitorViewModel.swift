@@ -10,6 +10,7 @@ final class MonitorViewModel: ObservableObject {
     @Published var tabs = MonitorTabState()
     @Published private(set) var gitActivity: [GitCommitStatus] = []
     @Published private(set) var gitActivityUnavailableReason: String?
+    @Published private(set) var skillStatus = SkillStatus()
 
     nonisolated(unsafe) private var timer: Timer?
     private let repositoryURL: URL
@@ -43,6 +44,7 @@ final class MonitorViewModel: ObservableObject {
             isDemoMode = true
         }
         refreshGitActivity()
+        refreshSkillStatus()
     }
 
     private func refreshGitActivity() {
@@ -53,6 +55,11 @@ final class MonitorViewModel: ObservableObject {
             gitActivity = []
             gitActivityUnavailableReason = "Git activity unavailable"
         }
+    }
+
+    private func refreshSkillStatus() {
+        let skillsURL = repositoryURL.appendingPathComponent(".agents/skills")
+        skillStatus = (try? LocalSkillStatusProvider(skillsRootURL: skillsURL).skillStatus()) ?? SkillStatus()
     }
 
     func revealEventDirectory() {

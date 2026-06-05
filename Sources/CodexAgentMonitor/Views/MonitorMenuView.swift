@@ -110,6 +110,9 @@ private struct OverviewTabView: View {
             SectionHeader(title: "Permissions", value: "\(permissionStatus.pendingApprovals) pending")
             PermissionStatusView(status: permissionStatus)
 
+            SectionHeader(title: "Skills", value: model.skillStatus.isAvailable ? "\(model.skillStatus.enabled.count) enabled" : "Unavailable")
+            SkillStatusView(status: model.skillStatus)
+
             SectionHeader(title: "Recent Codex Activity", value: "\(model.state.sessionActivities.count)")
             SessionActivityList(activities: Array(model.state.sessionActivities.suffix(4).reversed()))
         }
@@ -321,6 +324,47 @@ private struct PermissionStatusView: View {
             }
         }
         .accessibilityIdentifier("monitor.permissions.summary")
+    }
+}
+
+private struct SkillStatusView: View {
+    var status: SkillStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !status.isAvailable {
+                EmptyStateView(text: "Skill Status: Unavailable")
+            } else {
+                SkillNamesRow(title: "Enabled", names: status.enabled)
+                SkillNamesRow(title: "Disabled", names: status.disabled)
+            }
+        }
+        .accessibilityIdentifier("monitor.skills.summary")
+    }
+}
+
+private struct SkillNamesRow: View {
+    var title: String
+    var names: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            if names.isEmpty {
+                Text("None")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(names.prefix(4).joined(separator: ", "))
+                    .font(.caption.monospaced())
+                    .lineLimit(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
