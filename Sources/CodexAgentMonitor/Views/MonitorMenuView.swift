@@ -738,5 +738,7 @@ private func effectiveSessionId(selected: String?, sessions: [CodexSessionStatus
     if let selected, sessions.contains(where: { $0.id == selected }) {
         return selected
     }
-    return sessions.first?.id
+    return sessions.first(where: { session in
+        session.agents.contains { $0.status.isActive }
+    })?.id ?? sessions.first?.id
 }
