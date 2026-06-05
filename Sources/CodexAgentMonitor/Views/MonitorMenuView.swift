@@ -103,6 +103,9 @@ private struct OverviewTabView: View {
             SectionHeader(title: "Context", value: tokenStatus?.contextUsedPercent.map { "\(Int($0))%" } ?? "Unavailable")
             CodexContextView(tokenStatus: tokenStatus)
 
+            SectionHeader(title: "Latest Git Activity", value: model.gitActivity.isEmpty ? "Unavailable" : "\(model.gitActivity.count)")
+            GitActivityList(commits: model.gitActivity, unavailableReason: model.gitActivityUnavailableReason)
+
             SectionHeader(title: "Recent Codex Activity", value: "\(model.state.sessionActivities.count)")
             SessionActivityList(activities: Array(model.state.sessionActivities.suffix(4).reversed()))
         }
@@ -244,6 +247,45 @@ private struct CodexDetailRow: View {
                 .lineLimit(2)
             Spacer()
         }
+    }
+}
+
+private struct GitActivityList: View {
+    var commits: [GitCommitStatus]
+    var unavailableReason: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if commits.isEmpty {
+                EmptyStateView(text: unavailableReason ?? "Git activity unavailable")
+            } else {
+                ForEach(commits) { commit in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(commit.shortHash)
+                                .font(.caption.monospaced().weight(.semibold))
+                            Text(commit.branch)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(commit.localCommitAt.map { relativeTime(from: $0) } ?? "Local time unavailable")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(commit.message)
+                            .font(.caption)
+                            .lineLimit(1)
+                        Text("Push status: \(commit.pushStatus.rawValue.capitalized)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(8)
+                    .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+                    .accessibilityIdentifier("monitor.gitActivity.\(commit.shortHash)")
+                }
+            }
+        }
+        .accessibilityIdentifier("monitor.gitActivity.summary")
     }
 }
 

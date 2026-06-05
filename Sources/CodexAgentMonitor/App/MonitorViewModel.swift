@@ -8,11 +8,18 @@ final class MonitorViewModel: ObservableObject {
     @Published var eventLogPath: String
     @Published var isDemoMode = true
     @Published var tabs = MonitorTabState()
+    @Published private(set) var gitActivity: [GitCommitStatus] = []
+    @Published private(set) var gitActivityUnavailableReason: String?
 
     nonisolated(unsafe) private var timer: Timer?
+    private let repositoryURL: URL
 
-    init(eventLogPath: String = MonitorViewModel.defaultEventLogPath) {
+    init(
+        eventLogPath: String = MonitorViewModel.defaultEventLogPath,
+        repositoryURL: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    ) {
         self.eventLogPath = eventLogPath
+        self.repositoryURL = repositoryURL
         self.state = DemoTelemetry.state()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -34,6 +41,17 @@ final class MonitorViewModel: ObservableObject {
         } else {
             state = DemoTelemetry.state()
             isDemoMode = true
+        }
+        refreshGitActivity()
+    }
+
+    private func refreshGitActivity() {
+        do {
+            gitActivity = try LocalGitStatusProvider(repositoryURL: repositoryURL).recentGitActivity(limit: 3)
+            gitActivityUnavailableReason = gitActivity.isEmpty ? "No local commits found" : nil
+        } catch {
+            gitActivity = []
+            gitActivityUnavailableReason = "Git activity unavailable"
         }
     }
 
