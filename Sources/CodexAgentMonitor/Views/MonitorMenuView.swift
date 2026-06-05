@@ -8,16 +8,21 @@ struct MonitorMenuView: View {
         VStack(alignment: .leading, spacing: 16) {
             HeaderView(health: model.state.health, isDemoMode: model.isDemoMode)
             MonitorTabBar(model: model)
+            DataSourceSummary(model: model)
 
             ScrollView(.vertical) {
-                switch model.tabs.selected {
-                case .overview:
-                    OverviewTabView(model: model)
-                case .settings:
-                    SettingsView(model: model)
-                        .frame(minHeight: 280)
+                VStack(alignment: .leading, spacing: 0) {
+                    switch model.tabs.selected {
+                    case .overview:
+                        OverviewTabView(model: model)
+                    case .settings:
+                        SettingsView(model: model)
+                            .frame(minHeight: 280)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: .infinity)
             .frame(maxHeight: 640)
             .scrollIndicators(.visible)
             .accessibilityIdentifier("monitor.menu.scroll")
@@ -33,6 +38,24 @@ struct MonitorMenuView: View {
         }
         .padding(16)
         .accessibilityIdentifier("monitor.menu.root")
+    }
+}
+
+private struct DataSourceSummary: View {
+    @ObservedObject var model: MonitorViewModel
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(model.isDemoMode ? "Demo data" : "Live Codex data")
+                .font(.caption2.weight(.semibold))
+            Text("Agents \(model.state.agents.count)")
+            Text("Git \(model.gitActivity.count)")
+            Text("Skills \(model.skillStatus.enabled.count)")
+            Spacer()
+        }
+        .font(.caption2.monospacedDigit())
+        .foregroundStyle(.secondary)
+        .accessibilityIdentifier("monitor.dataSource.summary")
     }
 }
 
