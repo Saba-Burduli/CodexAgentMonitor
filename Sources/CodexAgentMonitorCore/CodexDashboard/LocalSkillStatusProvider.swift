@@ -35,6 +35,26 @@ public struct LocalSkillStatusProvider: SkillStatusProvider {
         )
     }
 
+    public func setSkill(_ name: String, enabled: Bool) throws {
+        guard isSafeSkillName(name) else {
+            throw SkillStatusProviderError.invalidSkillName
+        }
+
+        let skillURL = skillsRootURL.appendingPathComponent(name, isDirectory: true)
+        guard isDirectory(skillURL), hasSkillFile(skillURL) else {
+            throw SkillStatusProviderError.skillNotFound
+        }
+
+        let markerURL = skillURL.appendingPathComponent(".disabled")
+        if enabled {
+            if FileManager.default.fileExists(atPath: markerURL.path) {
+                try FileManager.default.removeItem(at: markerURL)
+            }
+        } else {
+            try Data().write(to: markerURL, options: .atomic)
+        }
+    }
+
     private func isDirectory(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
     }
@@ -42,4 +62,16 @@ public struct LocalSkillStatusProvider: SkillStatusProvider {
     private func hasSkillFile(_ url: URL) -> Bool {
         FileManager.default.fileExists(atPath: url.appendingPathComponent("SKILL.md").path)
     }
+
+    private func isSafeSkillName(_ name: String) -> Bool {
+        guard !name.isEmpty, !name.contains("/"), !name.contains("..") else { return false }
+        return name.allSatisfy { character in
+            character.isLetter || character.isNumber || character == "-" || character == "_"
+        }
+    }
+}
+
+public enum SkillStatusProviderError: Error, Equatable {
+    case invalidSkillName
+    case skillNotFound
 }

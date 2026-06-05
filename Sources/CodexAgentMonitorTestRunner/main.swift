@@ -279,10 +279,18 @@ struct CodexAgentMonitorTestRunner {
         try "".write(to: disabled.appendingPathComponent(".disabled"), atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let status = try LocalSkillStatusProvider(skillsRootURL: root).skillStatus()
+        let provider = LocalSkillStatusProvider(skillsRootURL: root)
+        let status = try provider.skillStatus()
         try expect(status.isAvailable, "expected skill status to be available")
         try expect(status.enabled == ["cost-control"], "expected enabled skill")
         try expect(status.disabled == ["legacy-monitor"], "expected disabled skill")
+
+        try provider.setSkill("cost-control", enabled: false)
+        let disabledStatus = try provider.skillStatus()
+        try expect(disabledStatus.disabled.contains("cost-control"), "expected disabled marker")
+        try provider.setSkill("cost-control", enabled: true)
+        let enabledStatus = try provider.skillStatus()
+        try expect(enabledStatus.enabled.contains("cost-control"), "expected enabled marker removal")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {
