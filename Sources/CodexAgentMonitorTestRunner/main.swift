@@ -15,11 +15,12 @@ struct CodexAgentMonitorTestRunner {
         try testCodexDashboardTokenDerivedValues()
         try testMonitorStateCodexDashboardAdapter()
         try testLocalGitStatusProviderParsesLogLine()
+        try testLocalSkillStatusProviderReadsRepoSkills()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 15 tests passed")
+        print("CodexAgentMonitorTestRunner: 16 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -261,6 +262,24 @@ struct CodexAgentMonitorTestRunner {
         try expect(commit?.branch == "main", "expected branch")
         try expect(commit?.pushStatus == .unavailable, "expected unavailable push status")
         try expect(commit?.localCommitAt != nil, "expected commit date")
+    }
+
+    private static func testLocalSkillStatusProviderReadsRepoSkills() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("codex-agent-monitor-skills-\(UUID().uuidString)")
+        let enabled = root.appendingPathComponent("cost-control")
+        let disabled = root.appendingPathComponent("legacy-monitor")
+        try FileManager.default.createDirectory(at: enabled, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: disabled, withIntermediateDirectories: true)
+        try "---\nname: cost-control\ndescription: Test\n---\n".write(to: enabled.appendingPathComponent("SKILL.md"), atomically: true, encoding: .utf8)
+        try "---\nname: legacy-monitor\ndescription: Test\n---\n".write(to: disabled.appendingPathComponent("SKILL.md"), atomically: true, encoding: .utf8)
+        try "".write(to: disabled.appendingPathComponent(".disabled"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let status = try LocalSkillStatusProvider(skillsRootURL: root).skillStatus()
+        try expect(status.isAvailable, "expected skill status to be available")
+        try expect(status.enabled == ["cost-control"], "expected enabled skill")
+        try expect(status.disabled == ["legacy-monitor"], "expected disabled skill")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {
