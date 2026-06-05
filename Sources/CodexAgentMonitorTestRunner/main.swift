@@ -477,6 +477,7 @@ struct CodexAgentMonitorTestRunner {
         try expect(agent?.model == "gpt-5.5", "expected model metadata")
         try expect(agent?.reasoningMode == .medium, "expected reasoning metadata")
         try expect(state.usage.contextWindowLimit == 258_400, "expected model context window")
+        try expect(state.usage.contextWindowUsed == 28_542, "expected last usage as context used")
         try expect(state.usage.fiveHourUsedPercent == 29, "expected primary limit percent")
         try expect(state.usage.weeklyUsedPercent == 5, "expected weekly limit percent")
     }

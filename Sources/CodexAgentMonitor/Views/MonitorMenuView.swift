@@ -247,8 +247,16 @@ private struct CodexContextView: View {
                     MetricCell(label: "Context Used", value: contextValue)
                 }
                 GridRow {
+                    MetricCell(label: "Context Left", value: tokenStatus?.contextRemaining?.formatted() ?? "Unavailable")
+                    MetricCell(label: "Context %", value: percentValue(tokenStatus?.contextUsedPercent))
+                }
+                GridRow {
                     MetricCell(label: "5h Limit", value: percentValue(tokenStatus?.fiveHourUsedPercent))
                     MetricCell(label: "Weekly Limit", value: percentValue(tokenStatus?.weeklyUsedPercent))
+                }
+                GridRow {
+                    MetricCell(label: "5h Left", value: remainingPercentValue(tokenStatus?.fiveHourUsedPercent))
+                    MetricCell(label: "Weekly Left", value: remainingPercentValue(tokenStatus?.weeklyUsedPercent))
                 }
                 GridRow {
                     MetricCell(label: "5h Reset", value: resetValue(tokenStatus?.fiveHourResetAt))
@@ -276,6 +284,11 @@ private struct CodexContextView: View {
     private func percentValue(_ value: Double?) -> String {
         guard let value else { return "Unavailable" }
         return "\(Int(value.rounded()))%"
+    }
+
+    private func remainingPercentValue(_ value: Double?) -> String {
+        guard let value else { return "Unavailable" }
+        return "\(Int(max(0, 100 - value).rounded()))%"
     }
 
     private func resetValue(_ date: Date?) -> String {

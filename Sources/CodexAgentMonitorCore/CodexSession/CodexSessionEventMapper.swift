@@ -162,7 +162,10 @@ public enum CodexSessionEventMapper {
             window7d: int(totalUsage?["total_tokens"]),
             total: int(totalUsage?["total_tokens"]),
             remaining: nil,
-            contextWindowUsed: optionalInt(info["context_window_used"]) ?? optionalInt(info["context_tokens"]) ?? optionalInt(lastUsage?["context_tokens"]),
+            contextWindowUsed: optionalInt(info["context_window_used"])
+                ?? optionalInt(info["context_tokens"])
+                ?? optionalInt(lastUsage?["context_tokens"])
+                ?? optionalInt(lastUsage?["total_tokens"]),
             contextWindowLimit: optionalInt(info["context_window_limit"]) ?? optionalInt(info["context_limit"]) ?? optionalInt(info["model_context_window"]),
             fiveHourUsedPercent: usedPercent,
             weeklyUsedPercent: number(secondary?["used_percent"]),
