@@ -12,11 +12,12 @@ struct CodexAgentMonitorTestRunner {
         try testHTTPIngestRequestValidation()
         try testSessionActivityEventsReplayIntoState()
         try testObserveOnlyPolicySanitizesForbiddenOperations()
+        try testCodexDashboardTokenDerivedValues()
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 12 tests passed")
+        print("CodexAgentMonitorTestRunner: 13 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -172,6 +173,36 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.diagnostics.contains("policy-test: Observe-only policy forbids operation: modify_codex"), "expected modify Codex diagnostic")
         try expect(state.diagnostics.contains("policy-test: Observe-only policy forbids operation: control_agents"), "expected control agents diagnostic")
         try expect(state.health == .critical, "expected policy violation to make health critical")
+    }
+
+    private static func testCodexDashboardTokenDerivedValues() throws {
+        let status = TokenStatus(
+            currentTaskTokens: 12_000,
+            contextWindowUsed: 61_000,
+            contextWindowLimit: 200_000,
+            fiveHourUsedPercent: 18,
+            weeklyUsedPercent: 42
+        )
+
+        try expect(status.contextUsedPercent == 30.5, "expected context percentage")
+        try expect(status.contextRemaining == 139_000, "expected context remaining")
+
+        let agent = CodexAgentStatus(
+            id: "agent-main",
+            displayName: "Main Agent",
+            sessionId: "session-1",
+            sessionName: "Streaming Platform",
+            status: .running,
+            currentAction: "Implementing Token Provider",
+            model: "GPT-5.5",
+            reasoningMode: .high,
+            files: [CodexFileActivity(path: "TokenProvider.swift", activity: .editing, updatedAt: Date(timeIntervalSince1970: 1))],
+            tokenStatus: status,
+            updatedAt: Date(timeIntervalSince1970: 2)
+        )
+
+        try expect(agent.files.first?.activity == .editing, "expected file activity")
+        try expect(agent.reasoningMode == .high, "expected reasoning mode")
     }
 
     private static func testSettingsTabDeduplicatesAndFocuses() throws {
