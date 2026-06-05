@@ -37,8 +37,14 @@ final class MonitorViewModel: ObservableObject {
 
     func refresh() {
         let url = URL(fileURLWithPath: (eventLogPath as NSString).expandingTildeInPath)
-        if let loaded = EventLogReader(url: url).readState() {
-            state = loaded
+        let monitorState = EventLogReader(url: url).readState()
+        let codexState = CodexCLIStateReader().readLatestState()
+
+        if let codexState {
+            state = merge(primary: codexState, overlay: monitorState)
+            isDemoMode = false
+        } else if let monitorState {
+            state = monitorState
             isDemoMode = false
         } else {
             state = DemoTelemetry.state()
@@ -61,6 +67,18 @@ final class MonitorViewModel: ObservableObject {
     private func refreshSkillStatus() {
         let skillsURL = repositoryURL.appendingPathComponent(".agents/skills")
         skillStatus = (try? LocalSkillStatusProvider(skillsRootURL: skillsURL).skillStatus()) ?? SkillStatus()
+    }
+
+    private func merge(primary: MonitorState, overlay: MonitorState?) -> MonitorState {
+        guard let overlay else { return primary }
+        return MonitorState(
+            agents: primary.agents + overlay.agents,
+            usage: primary.usage.total > 0 ? primary.usage : overlay.usage,
+            permissions: primary.permissions + overlay.permissions,
+            diagnostics: primary.diagnostics + overlay.diagnostics,
+            sessionActivities: Array((primary.sessionActivities + overlay.sessionActivities).suffix(200)),
+            lastEventAt: [primary.lastEventAt, overlay.lastEventAt].compactMap(\.self).max()
+        )
     }
 
     func revealEventDirectory() {

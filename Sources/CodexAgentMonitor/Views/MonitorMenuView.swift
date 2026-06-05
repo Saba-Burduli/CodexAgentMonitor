@@ -250,6 +250,10 @@ private struct CodexContextView: View {
                     MetricCell(label: "5h Limit", value: percentValue(tokenStatus?.fiveHourUsedPercent))
                     MetricCell(label: "Weekly Limit", value: percentValue(tokenStatus?.weeklyUsedPercent))
                 }
+                GridRow {
+                    MetricCell(label: "5h Reset", value: resetValue(tokenStatus?.fiveHourResetAt))
+                    MetricCell(label: "Weekly Reset", value: resetValue(tokenStatus?.weeklyResetAt))
+                }
             }
 
             if let usedPercent = tokenStatus?.contextUsedPercent {
@@ -272,6 +276,11 @@ private struct CodexContextView: View {
     private func percentValue(_ value: Double?) -> String {
         guard let value else { return "Unavailable" }
         return "\(Int(value.rounded()))%"
+    }
+
+    private func resetValue(_ date: Date?) -> String {
+        guard let date else { return "Unavailable" }
+        return relativeTimeUntil(date)
     }
 }
 
@@ -709,6 +718,20 @@ private func relativeTime(from date: Date, now: Date = Date()) -> String {
     if hours < 24 { return "\(hours)h ago" }
 
     return date.formatted(date: .abbreviated, time: .shortened)
+}
+
+private func relativeTimeUntil(_ date: Date, now: Date = Date()) -> String {
+    let seconds = Int(date.timeIntervalSince(now))
+    if seconds <= 0 { return "Now" }
+
+    let minutes = seconds / 60
+    if minutes < 60 { return "\(max(1, minutes))m" }
+
+    let hours = minutes / 60
+    if hours < 24 { return "\(hours)h \(minutes % 60)m" }
+
+    let days = hours / 24
+    return "\(days)d \(hours % 24)h"
 }
 
 private func effectiveSessionId(selected: String?, sessions: [CodexSessionStatus]) -> String? {

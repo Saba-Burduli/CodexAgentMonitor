@@ -19,8 +19,9 @@ struct CodexAgentMonitorTestRunner {
         try testSettingsTabDeduplicatesAndFocuses()
         try testCodexSessionMapperMirrorsUsageAndToolEvents()
         try testCodexSessionMapperMirrorsMessagesAndContext()
+        try testCodexCLIStateReaderReadsLatestRollout()
         try testEventLogReaderReplaysMirroredSessionEvents()
-        print("CodexAgentMonitorTestRunner: 16 tests passed")
+        print("CodexAgentMonitorTestRunner: 17 tests passed")
     }
 
     private static func testAgentLifecycleEventsUpdateActiveState() throws {
@@ -229,6 +230,8 @@ struct CodexAgentMonitorTestRunner {
             contextWindowLimit: 200_000,
             fiveHourUsedPercent: 18,
             weeklyUsedPercent: 42,
+            fiveHourResetAt: Date(timeIntervalSince1970: 4_300),
+            weeklyResetAt: Date(timeIntervalSince1970: 5_000),
             trend: .rising,
             updatedAt: now
         )))
@@ -251,6 +254,7 @@ struct CodexAgentMonitorTestRunner {
         try expect(agents.first?.tokenStatus?.currentTaskTokens == 1_200, "expected token status")
         try expect(agents.first?.tokenStatus?.contextWindowLimit == 200_000, "expected context limit")
         try expect(agents.first?.tokenStatus?.weeklyUsedPercent == 42, "expected weekly percent")
+        try expect(agents.first?.tokenStatus?.fiveHourResetAt == Date(timeIntervalSince1970: 4_300), "expected reset date")
         try expect(sessions.first?.id == "turn-1", "expected session status")
         try expect(permissions.commandExecution == .allowed, "expected command permission")
         try expect(permissions.fileWrites == .allowed, "expected file write permission")
@@ -318,7 +322,7 @@ struct CodexAgentMonitorTestRunner {
 
     private static func testCodexSessionMapperMirrorsUsageAndToolEvents() throws {
         let tokenLine = """
-        {"timestamp":"2026-05-24T22:44:26.308Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":24152842},"last_token_usage":{"total_tokens":182089},"context_window_used":61000,"context_window_limit":200000},"rate_limits":{"primary":{"used_percent":100.0,"window_minutes":10080},"secondary":{"used_percent":42.0}}}}
+        {"timestamp":"2026-05-24T22:44:26.308Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":24152842},"last_token_usage":{"total_tokens":182089},"context_window_used":61000,"context_window_limit":200000},"rate_limits":{"primary":{"used_percent":100.0,"window_minutes":10080,"resets_at":1780626599},"secondary":{"used_percent":42.0,"resets_at":1781213399}}}}
         """
         let usageEvents = CodexSessionEventMapper.events(from: tokenLine)
         try expect(usageEvents.count == 2, "expected usage and rate-limit events")
@@ -330,6 +334,7 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.usage.contextWindowUsed == 61_000, "expected context usage to mirror")
         try expect(state.usage.contextWindowLimit == 200_000, "expected context limit to mirror")
         try expect(state.usage.weeklyUsedPercent == 42, "expected weekly percent to mirror")
+        try expect(state.usage.fiveHourResetAt == Date(timeIntervalSince1970: 1_780_626_599), "expected primary reset to mirror")
         try expect(state.permissions.first?.rateLimit.used == 100, "expected rate limit percent to mirror")
         try expect(state.health == .critical, "expected exhausted Codex rate limit to be critical")
 
@@ -440,6 +445,40 @@ struct CodexAgentMonitorTestRunner {
         try expect(state.sessionActivities.contains(where: { $0.title == "Codex reasoning" }), "expected reasoning marker to persist in activity history")
         try expect(state.agents.first(where: { $0.id == "turn-1" })?.status == .error, "expected aborted turn to mirror as error")
         try expect(state.diagnostics.contains("turn-1: Codex turn aborted"), "expected aborted turn diagnostic")
+    }
+
+    private static func testCodexCLIStateReaderReadsLatestRollout() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("codex-agent-monitor-cli-\(UUID().uuidString)")
+        let sessions = root.appendingPathComponent("sessions/2026/06/05")
+        let history = root.appendingPathComponent("history.jsonl")
+        let sessionID = "019e9557-e183-7f80-9a37-6e49beb7f547"
+        let rollout = sessions.appendingPathComponent("rollout-2026-06-05T05-13-45-\(sessionID).jsonl")
+        try FileManager.default.createDirectory(at: sessions, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let rolloutLines = [
+            #"{"timestamp":"2026-06-05T01:14:35.730Z","type":"session_meta","payload":{"id":"019e9557-e183-7f80-9a37-6e49beb7f547","source":"cli"}}"#,
+            #"{"timestamp":"2026-06-05T01:14:36.445Z","type":"turn_context","payload":{"turn_id":"turn-1","session_id":"019e9557-e183-7f80-9a37-6e49beb7f547","cwd":"/tmp/project","model":"gpt-5.5","collaboration_mode":{"settings":{"reasoning_effort":"medium"}}}}"#,
+            #"{"timestamp":"2026-06-05T01:14:53.585Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":79486},"last_token_usage":{"total_tokens":28542},"model_context_window":258400},"rate_limits":{"primary":{"used_percent":29.0,"window_minutes":300,"resets_at":1780626599},"secondary":{"used_percent":5.0,"window_minutes":10080,"resets_at":1781213399}}}}"#
+        ].joined(separator: "\n")
+        try "\(rolloutLines)\n".write(to: rollout, atomically: true, encoding: .utf8)
+        try #"{"session_id":"019e9557-e183-7f80-9a37-6e49beb7f547","ts":1780658148,"text":"Fix Missing Real Codex Data"}"#.write(to: history, atomically: true, encoding: .utf8)
+
+        guard let state = CodexCLIStateReader(
+            sessionsRootURL: root.appendingPathComponent("sessions"),
+            historyURL: history
+        ).readLatestState() else {
+            throw TestFailure(message: "expected Codex CLI state")
+        }
+
+        let agent = state.agents.first { $0.id == sessionID }
+        try expect(agent?.sessionName == "Fix Missing Real Codex Data", "expected history session name")
+        try expect(agent?.model == "gpt-5.5", "expected model metadata")
+        try expect(agent?.reasoningMode == .medium, "expected reasoning metadata")
+        try expect(state.usage.contextWindowLimit == 258_400, "expected model context window")
+        try expect(state.usage.fiveHourUsedPercent == 29, "expected primary limit percent")
+        try expect(state.usage.weeklyUsedPercent == 5, "expected weekly limit percent")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {

@@ -21,13 +21,20 @@ public enum CodexSessionEventMapper {
             return threadEvents(
                 task: "Codex session metadata",
                 activity: "Session \(string(payload["id"]) ?? "unknown") from \(string(payload["source"]) ?? "unknown source")",
-                timestamp: timestamp
+                timestamp: timestamp,
+                sessionId: string(payload["id"]),
+                model: string(payload["model"])
             )
         case "turn_context":
+            let model = string(payload["model"])
+            let reasoning = reasoningMode(from: payload)
             return threadEvents(
                 task: "Codex turn context",
-                activity: "Turn \(string(payload["turn_id"]) ?? "unknown") in \(string(payload["cwd"]) ?? "unknown workspace")",
-                timestamp: timestamp
+                activity: contextActivity(payload: payload, model: model, reasoning: reasoning),
+                timestamp: timestamp,
+                sessionId: string(payload["session_id"]),
+                model: model,
+                reasoningMode: reasoning
             )
         case "compacted":
             return threadEvents(task: "Codex context compacted", activity: "Compacted session context", timestamp: timestamp)
@@ -48,7 +55,10 @@ public enum CodexSessionEventMapper {
                 currentTask: "Codex session turn started",
                 startedAt: startedAt,
                 updatedAt: timestamp,
-                activity: "Processing current Codex request"
+                activity: "Processing current Codex request",
+                sessionId: turnID,
+                model: string(payload["model"]),
+                reasoningMode: reasoningMode(from: payload)
             ))]
         case "token_count":
             return tokenEvents(from: payload, timestamp: timestamp)
@@ -144,6 +154,7 @@ public enum CodexSessionEventMapper {
         let totalUsage = info["total_token_usage"] as? [String: Any]
         let rateLimits = payload["rate_limits"] as? [String: Any]
         let primary = rateLimits?["primary"] as? [String: Any]
+        let secondary = rateLimits?["secondary"] as? [String: Any]
         let usedPercent = number(primary?["used_percent"])
 
         let usage = UsageMetrics(
@@ -154,7 +165,9 @@ public enum CodexSessionEventMapper {
             contextWindowUsed: optionalInt(info["context_window_used"]) ?? optionalInt(info["context_tokens"]) ?? optionalInt(lastUsage?["context_tokens"]),
             contextWindowLimit: optionalInt(info["context_window_limit"]) ?? optionalInt(info["context_limit"]) ?? optionalInt(info["model_context_window"]),
             fiveHourUsedPercent: usedPercent,
-            weeklyUsedPercent: number((rateLimits?["secondary"] as? [String: Any])?["used_percent"]),
+            weeklyUsedPercent: number(secondary?["used_percent"]),
+            fiveHourResetAt: epochDate(primary?["resets_at"]),
+            weeklyResetAt: epochDate(secondary?["resets_at"]),
             trend: usedPercent.map { $0 >= 90 ? .spiking : .rising } ?? .stable,
             updatedAt: timestamp
         )
@@ -222,19 +235,36 @@ public enum CodexSessionEventMapper {
         return string(action["type"])
     }
 
-    private static func threadActivity(task: String, activity: String, timestamp: Date) -> MonitorEvent {
+    private static func threadActivity(
+        task: String,
+        activity: String,
+        timestamp: Date,
+        sessionId: String? = nil,
+        model: String? = nil,
+        reasoningMode: ReasoningMode? = nil
+    ) -> MonitorEvent {
         .agentStatusUpdate(AgentTelemetry(
-            id: "codex-thread",
+            id: sessionId ?? "codex-thread",
             name: "Codex Thread",
             status: .completed,
             currentTask: task,
             startedAt: timestamp,
             updatedAt: timestamp,
-            activity: activity
+            activity: activity,
+            sessionId: sessionId,
+            model: model,
+            reasoningMode: reasoningMode
         ))
     }
 
-    private static func threadEvents(task: String, activity: String, timestamp: Date) -> [MonitorEvent] {
+    private static func threadEvents(
+        task: String,
+        activity: String,
+        timestamp: Date,
+        sessionId: String? = nil,
+        model: String? = nil,
+        reasoningMode: ReasoningMode? = nil
+    ) -> [MonitorEvent] {
         [
             .sessionActivityRecorded(SessionActivity(
                 timestamp: timestamp,
@@ -242,8 +272,41 @@ public enum CodexSessionEventMapper {
                 title: task,
                 detail: activity
             )),
-            threadActivity(task: task, activity: excerpt(activity), timestamp: timestamp)
+            threadActivity(
+                task: task,
+                activity: excerpt(activity),
+                timestamp: timestamp,
+                sessionId: sessionId,
+                model: model,
+                reasoningMode: reasoningMode
+            )
         ]
+    }
+
+    private static func contextActivity(payload: [String: Any], model: String?, reasoning: ReasoningMode?) -> String {
+        var parts = [
+            "Turn \(string(payload["turn_id"]) ?? "unknown")",
+            "workspace \(string(payload["cwd"]) ?? "unknown")"
+        ]
+        if let model {
+            parts.append("model \(model)")
+        }
+        if let reasoning {
+            parts.append("reasoning \(reasoning.rawValue)")
+        }
+        return parts.joined(separator: " | ")
+    }
+
+    private static func reasoningMode(from payload: [String: Any]) -> ReasoningMode? {
+        if let effort = string(payload["reasoning_effort"]) {
+            return ReasoningMode(rawValue: effort) ?? .unknown
+        }
+        let collaborationMode = payload["collaboration_mode"] as? [String: Any]
+        let settings = collaborationMode?["settings"] as? [String: Any]
+        if let effort = string(settings?["reasoning_effort"]) {
+            return ReasoningMode(rawValue: effort) ?? .unknown
+        }
+        return nil
     }
 
     private static func messageText(_ value: Any?) -> String? {

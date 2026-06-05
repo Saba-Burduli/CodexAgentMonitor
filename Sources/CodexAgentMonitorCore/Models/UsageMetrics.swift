@@ -9,6 +9,8 @@ public struct UsageMetrics: Codable, Equatable, Sendable {
     public var contextWindowLimit: Int?
     public var fiveHourUsedPercent: Double?
     public var weeklyUsedPercent: Double?
+    public var fiveHourResetAt: Date?
+    public var weeklyResetAt: Date?
     public var trend: UsageTrend
     public var updatedAt: Date
 
@@ -21,6 +23,8 @@ public struct UsageMetrics: Codable, Equatable, Sendable {
         contextWindowLimit: Int? = nil,
         fiveHourUsedPercent: Double? = nil,
         weeklyUsedPercent: Double? = nil,
+        fiveHourResetAt: Date? = nil,
+        weeklyResetAt: Date? = nil,
         trend: UsageTrend = .stable,
         updatedAt: Date = Date(timeIntervalSince1970: 0)
     ) {
@@ -32,6 +36,8 @@ public struct UsageMetrics: Codable, Equatable, Sendable {
         self.contextWindowLimit = contextWindowLimit
         self.fiveHourUsedPercent = fiveHourUsedPercent
         self.weeklyUsedPercent = weeklyUsedPercent
+        self.fiveHourResetAt = fiveHourResetAt
+        self.weeklyResetAt = weeklyResetAt
         self.trend = trend
         self.updatedAt = updatedAt
     }

@@ -15,11 +15,11 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
                     id: agent.id,
                     displayName: agent.name,
                     sessionId: sessionId(for: agent),
-                    sessionName: sessionName,
+                    sessionName: agent.sessionName ?? sessionName,
                     status: agent.status,
                     currentAction: agent.activity.isEmpty ? agent.currentTask : agent.activity,
-                    model: nil,
-                    reasoningMode: nil,
+                    model: agent.model,
+                    reasoningMode: agent.reasoningMode,
                     files: fileActivities(for: agent),
                     tokenStatus: try? tokenStatus(for: sessionId(for: agent)),
                     updatedAt: agent.updatedAt
@@ -52,8 +52,8 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
             contextWindowLimit: state.usage.contextWindowLimit,
             fiveHourUsedPercent: state.usage.fiveHourUsedPercent ?? percentUsed(consumed: state.usage.total, remaining: state.usage.remaining),
             weeklyUsedPercent: state.usage.weeklyUsedPercent,
-            fiveHourResetAt: nil,
-            weeklyResetAt: nil
+            fiveHourResetAt: state.usage.fiveHourResetAt,
+            weeklyResetAt: state.usage.weeklyResetAt
         )
     }
 
@@ -79,6 +79,9 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
     }
 
     private func sessionId(for agent: AgentTelemetry) -> String {
+        if let sessionId = agent.sessionId {
+            return sessionId
+        }
         if agent.name == "Codex Thread" {
             return agent.id
         }

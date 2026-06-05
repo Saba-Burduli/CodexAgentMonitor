@@ -8,6 +8,10 @@ public struct AgentTelemetry: Codable, Equatable, Identifiable, Sendable {
     public var startedAt: Date
     public var updatedAt: Date
     public var activity: String
+    public var sessionId: String?
+    public var sessionName: String?
+    public var model: String?
+    public var reasoningMode: ReasoningMode?
 
     public init(
         id: String,
@@ -16,7 +20,11 @@ public struct AgentTelemetry: Codable, Equatable, Identifiable, Sendable {
         currentTask: String,
         startedAt: Date,
         updatedAt: Date,
-        activity: String = "Waiting for activity"
+        activity: String = "Waiting for activity",
+        sessionId: String? = nil,
+        sessionName: String? = nil,
+        model: String? = nil,
+        reasoningMode: ReasoningMode? = nil
     ) {
         self.id = id
         self.name = name
@@ -25,6 +33,10 @@ public struct AgentTelemetry: Codable, Equatable, Identifiable, Sendable {
         self.startedAt = startedAt
         self.updatedAt = updatedAt
         self.activity = activity
+        self.sessionId = sessionId
+        self.sessionName = sessionName
+        self.model = model
+        self.reasoningMode = reasoningMode
     }
 
     public func duration(asOf date: Date) -> TimeInterval {
