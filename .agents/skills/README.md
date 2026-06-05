@@ -1,67 +1,27 @@
 # Repo-Local Codex Skills
 
-This directory contains repo-local skills created to replace useful MCP-driven workflows with local-first Codex Skills.
+These skills keep CodexAgentMonitor work targeted, local-first, and low-cost.
 
-## MCP Inspection Summary
+Available skills:
 
-Global config inspected but not modified because the user explicitly requested that `~/.codex/config.toml` must not be changed.
+- `$cost-control`: Default mode for minimizing token usage, context size, network use, installs, broad tests, and broad file reads.
+- `$targeted-debug`: Use for bugs, errors, failing tests, stack traces, or regressions. Starts from the exact error and validates the smallest fix.
+- `$targeted-implementation`: Use for small features. Keeps inspection narrow, avoids rewrites, and limits the diff.
+- `$targeted-review`: Use for diffs or PRs. Reviews changed files with `git diff --stat` and focused `git diff`.
+- `$local-js-automation`: Use for local JavaScript/Node automation or replacing node_repl-style MCP execution with explicit local commands.
 
-| Config path | MCP server | Current action | Replacement skill |
-| --- | --- | --- | --- |
-| `~/.codex/config.toml` | `mcp_servers.node_repl` | Recommended: add `enabled = false` manually under `[mcp_servers.node_repl]` | `$local-js-automation` |
-| `.codex/config.toml` | none; file not present | No repo-local MCP config to disable | none |
-
-No repo-local MCP server blocks were found, so no `.codex/config.toml` changes were made.
-
-## Skills Created
-
-### `$local-js-automation`
-
-Use for local JavaScript/Node automation, quick JSON/data transforms, Node file validation, or replacing node_repl-style MCP execution with local commands.
-
-Explicit invocation:
+Invocation examples:
 
 ```text
+$cost-control
+$targeted-debug
+$targeted-implementation
+$targeted-review
 $local-js-automation run a local Node check for this repo
 ```
 
-Skill path:
+Notes:
 
-```text
-.agents/skills/local-js-automation/SKILL.md
-```
-
-Helper script:
-
-```sh
-.agents/skills/local-js-automation/scripts/check_node_local.sh
-```
-
-## Recommended Global MCP Edit
-
-Because global config modification was explicitly forbidden, apply this manually if you want Codex MCP disabled globally:
-
-```toml
-[mcp_servers.node_repl]
-enabled = false
-```
-
-Preserve existing fields such as `command`, `args`, `env`, `startup_timeout_sec`, and `tool_timeout_sec`.
-
-## Capabilities Not Fully Replaced
-
-- Persistent in-process Node REPL state from MCP is not replicated. The replacement is safer local one-shot commands or explicit scripts.
-- Any browser automation behavior layered on top of a REPL must be re-created as explicit local scripts or project tests.
-- Global MCP status still needs manual verification because `~/.codex/config.toml` was not modified.
-
-## Suggested Verification
-
-```sh
-codex mcp list
-```
-
-Or inside Codex:
-
-```text
-/mcp
-```
+- Load only the skill needed for the task.
+- Keep validation targeted; prefer `swift run CodexAgentMonitorTestRunner` for core logic and avoid full scripts unless needed.
+- Do not use network calls, package installs, subagents, or broad tests without approval.
