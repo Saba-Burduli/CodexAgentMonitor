@@ -8,6 +8,7 @@ final class MonitorViewModel: ObservableObject {
     @Published var eventLogPath: String
     @Published var isDemoMode = true
     @Published var tabs = MonitorTabState()
+    @Published var selectedSessionId: String?
     @Published private(set) var gitActivity: [GitCommitStatus] = []
     @Published private(set) var gitActivityUnavailableReason: String?
     @Published private(set) var skillStatus = SkillStatus()
@@ -78,6 +79,10 @@ final class MonitorViewModel: ObservableObject {
 
     func closeTab(_ kind: MonitorTabKind) {
         tabs.close(kind)
+    }
+
+    func selectSession(_ id: String) {
+        selectedSessionId = id.isEmpty ? nil : id
     }
 
     static let defaultEventLogPath = "~/.codex-agent-monitor/events.jsonl"

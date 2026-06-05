@@ -83,16 +83,21 @@ private struct OverviewTabView: View {
         let adapter = MonitorStateCodexDashboardAdapter(state: model.state)
         let agents = (try? adapter.agentStatuses()) ?? []
         let sessions = (try? adapter.sessions()) ?? []
-        let tokenStatus = (try? adapter.tokenStatus(for: sessions.first?.id)) ?? nil
+        let selectedSessionId = effectiveSessionId(selected: model.selectedSessionId, sessions: sessions)
+        let visibleAgents = selectedSessionId.map { id in agents.filter { $0.sessionId == id } } ?? agents
+        let tokenStatus = (try? adapter.tokenStatus(for: selectedSessionId)) ?? nil
         let permissionStatus = (try? adapter.permissionStatus()) ?? PermissionStatus()
 
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Codex Agents", value: "\(agents.count)")
-            if agents.isEmpty {
+            SectionHeader(title: "Active Session", value: selectedSessionId ?? "Unavailable")
+            SessionPicker(sessions: sessions, selectedSessionId: selectedSessionId) { model.selectSession($0) }
+
+            SectionHeader(title: "Codex Agents", value: "\(visibleAgents.count)")
+            if visibleAgents.isEmpty {
                 EmptyStateView(text: "No active Codex agents observed")
             } else {
                 VStack(spacing: 10) {
-                    ForEach(agents) { agent in
+                    ForEach(visibleAgents) { agent in
                         CodexAgentRow(agent: agent)
                     }
                 }
@@ -117,6 +122,35 @@ private struct OverviewTabView: View {
             SessionActivityList(activities: Array(model.state.sessionActivities.suffix(4).reversed()))
         }
         .accessibilityIdentifier("monitor.tab.overview.content")
+    }
+}
+
+private struct SessionPicker: View {
+    var sessions: [CodexSessionStatus]
+    var selectedSessionId: String?
+    var select: (String) -> Void
+
+    var body: some View {
+        if sessions.isEmpty {
+            EmptyStateView(text: "No Codex sessions available for switching")
+        } else {
+            Menu(selectedSessionTitle) {
+                ForEach(sessions) { session in
+                    Button(session.name ?? session.id) {
+                        select(session.id)
+                    }
+                }
+            }
+            .accessibilityIdentifier("monitor.sessionPicker")
+        }
+    }
+
+    private var selectedSessionTitle: String {
+        sessions.first(where: { $0.id == selectedSessionId })?.name
+            ?? selectedSessionId
+            ?? sessions.first?.name
+            ?? sessions.first?.id
+            ?? "Select Session"
     }
 }
 
@@ -657,4 +691,11 @@ private func relativeTime(from date: Date, now: Date = Date()) -> String {
     if hours < 24 { return "\(hours)h ago" }
 
     return date.formatted(date: .abbreviated, time: .shortened)
+}
+
+private func effectiveSessionId(selected: String?, sessions: [CodexSessionStatus]) -> String? {
+    if let selected, sessions.contains(where: { $0.id == selected }) {
+        return selected
+    }
+    return sessions.first?.id
 }
