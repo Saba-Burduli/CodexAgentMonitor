@@ -5,6 +5,10 @@ public struct UsageMetrics: Codable, Equatable, Sendable {
     public var window7d: Int
     public var total: Int
     public var remaining: Int?
+    public var contextWindowUsed: Int?
+    public var contextWindowLimit: Int?
+    public var fiveHourUsedPercent: Double?
+    public var weeklyUsedPercent: Double?
     public var trend: UsageTrend
     public var updatedAt: Date
 
@@ -13,6 +17,10 @@ public struct UsageMetrics: Codable, Equatable, Sendable {
         window7d: Int = 0,
         total: Int = 0,
         remaining: Int? = nil,
+        contextWindowUsed: Int? = nil,
+        contextWindowLimit: Int? = nil,
+        fiveHourUsedPercent: Double? = nil,
+        weeklyUsedPercent: Double? = nil,
         trend: UsageTrend = .stable,
         updatedAt: Date = Date(timeIntervalSince1970: 0)
     ) {
@@ -20,6 +28,10 @@ public struct UsageMetrics: Codable, Equatable, Sendable {
         self.window7d = window7d
         self.total = total
         self.remaining = remaining
+        self.contextWindowUsed = contextWindowUsed
+        self.contextWindowLimit = contextWindowLimit
+        self.fiveHourUsedPercent = fiveHourUsedPercent
+        self.weeklyUsedPercent = weeklyUsedPercent
         self.trend = trend
         self.updatedAt = updatedAt
     }

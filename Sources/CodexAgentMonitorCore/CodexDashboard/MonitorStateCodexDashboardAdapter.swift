@@ -48,10 +48,10 @@ public struct MonitorStateCodexDashboardAdapter: AgentStatusProvider, SessionSta
 
         return TokenStatus(
             currentTaskTokens: state.usage.window5h == 0 ? nil : state.usage.window5h,
-            contextWindowUsed: state.usage.total == 0 ? nil : state.usage.total,
-            contextWindowLimit: nil,
-            fiveHourUsedPercent: percentUsed(consumed: state.usage.total, remaining: state.usage.remaining),
-            weeklyUsedPercent: nil,
+            contextWindowUsed: state.usage.contextWindowUsed,
+            contextWindowLimit: state.usage.contextWindowLimit,
+            fiveHourUsedPercent: state.usage.fiveHourUsedPercent ?? percentUsed(consumed: state.usage.total, remaining: state.usage.remaining),
+            weeklyUsedPercent: state.usage.weeklyUsedPercent,
             fiveHourResetAt: nil,
             weeklyResetAt: nil
         )

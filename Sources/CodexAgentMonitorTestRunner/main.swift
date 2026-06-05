@@ -225,6 +225,10 @@ struct CodexAgentMonitorTestRunner {
             window7d: 9_000,
             total: 12_000,
             remaining: 188_000,
+            contextWindowUsed: 61_000,
+            contextWindowLimit: 200_000,
+            fiveHourUsedPercent: 18,
+            weeklyUsedPercent: 42,
             trend: .rising,
             updatedAt: now
         )))
@@ -245,6 +249,8 @@ struct CodexAgentMonitorTestRunner {
         try expect(agents.first?.files.first?.path == "Sources/CodexAgentMonitorCore/TokenProvider.swift", "expected file activity path")
         try expect(agents.first?.files.first?.activity == .editing, "expected editing file activity")
         try expect(agents.first?.tokenStatus?.currentTaskTokens == 1_200, "expected token status")
+        try expect(agents.first?.tokenStatus?.contextWindowLimit == 200_000, "expected context limit")
+        try expect(agents.first?.tokenStatus?.weeklyUsedPercent == 42, "expected weekly percent")
         try expect(sessions.first?.id == "turn-1", "expected session status")
         try expect(permissions.commandExecution == .allowed, "expected command permission")
         try expect(permissions.fileWrites == .allowed, "expected file write permission")
@@ -312,7 +318,7 @@ struct CodexAgentMonitorTestRunner {
 
     private static func testCodexSessionMapperMirrorsUsageAndToolEvents() throws {
         let tokenLine = """
-        {"timestamp":"2026-05-24T22:44:26.308Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":24152842},"last_token_usage":{"total_tokens":182089}},"rate_limits":{"primary":{"used_percent":100.0,"window_minutes":10080}}}}
+        {"timestamp":"2026-05-24T22:44:26.308Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"total_tokens":24152842},"last_token_usage":{"total_tokens":182089},"context_window_used":61000,"context_window_limit":200000},"rate_limits":{"primary":{"used_percent":100.0,"window_minutes":10080},"secondary":{"used_percent":42.0}}}}
         """
         let usageEvents = CodexSessionEventMapper.events(from: tokenLine)
         try expect(usageEvents.count == 2, "expected usage and rate-limit events")
@@ -321,6 +327,9 @@ struct CodexAgentMonitorTestRunner {
         state.apply(usageEvents)
         try expect(state.usage.window5h == 182089, "expected last token usage to mirror into 5h window")
         try expect(state.usage.total == 24152842, "expected total token usage to mirror")
+        try expect(state.usage.contextWindowUsed == 61_000, "expected context usage to mirror")
+        try expect(state.usage.contextWindowLimit == 200_000, "expected context limit to mirror")
+        try expect(state.usage.weeklyUsedPercent == 42, "expected weekly percent to mirror")
         try expect(state.permissions.first?.rateLimit.used == 100, "expected rate limit percent to mirror")
         try expect(state.health == .critical, "expected exhausted Codex rate limit to be critical")
 

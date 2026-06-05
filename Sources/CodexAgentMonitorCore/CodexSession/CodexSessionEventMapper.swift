@@ -151,6 +151,10 @@ public enum CodexSessionEventMapper {
             window7d: int(totalUsage?["total_tokens"]),
             total: int(totalUsage?["total_tokens"]),
             remaining: nil,
+            contextWindowUsed: optionalInt(info["context_window_used"]) ?? optionalInt(info["context_tokens"]) ?? optionalInt(lastUsage?["context_tokens"]),
+            contextWindowLimit: optionalInt(info["context_window_limit"]) ?? optionalInt(info["context_limit"]) ?? optionalInt(info["model_context_window"]),
+            fiveHourUsedPercent: usedPercent,
+            weeklyUsedPercent: number((rateLimits?["secondary"] as? [String: Any])?["used_percent"]),
             trend: usedPercent.map { $0 >= 90 ? .spiking : .rising } ?? .stable,
             updatedAt: timestamp
         )
@@ -186,6 +190,10 @@ public enum CodexSessionEventMapper {
 
     private static func int(_ value: Any?) -> Int {
         Int(number(value) ?? 0)
+    }
+
+    private static func optionalInt(_ value: Any?) -> Int? {
+        number(value).map(Int.init)
     }
 
     private static func number(_ value: Any?) -> Double? {
