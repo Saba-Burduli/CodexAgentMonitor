@@ -9,13 +9,18 @@ struct MonitorMenuView: View {
             HeaderView(health: model.state.health, isDemoMode: model.isDemoMode)
             MonitorTabBar(model: model)
 
-            switch model.tabs.selected {
-            case .overview:
-                OverviewTabView(model: model)
-            case .settings:
-                SettingsView(model: model)
-                    .frame(minHeight: 280)
+            ScrollView(.vertical) {
+                switch model.tabs.selected {
+                case .overview:
+                    OverviewTabView(model: model)
+                case .settings:
+                    SettingsView(model: model)
+                        .frame(minHeight: 280)
+                }
             }
+            .frame(maxHeight: 640)
+            .scrollIndicators(.visible)
+            .accessibilityIdentifier("monitor.menu.scroll")
 
             Divider()
 
