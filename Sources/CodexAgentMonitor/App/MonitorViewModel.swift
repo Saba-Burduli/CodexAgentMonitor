@@ -18,7 +18,7 @@ final class MonitorViewModel: ObservableObject {
 
     init(
         eventLogPath: String = MonitorViewModel.defaultEventLogPath,
-        repositoryURL: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        repositoryURL: URL = MonitorViewModel.defaultRepositoryURL()
     ) {
         self.eventLogPath = eventLogPath
         self.repositoryURL = repositoryURL
@@ -92,4 +92,12 @@ final class MonitorViewModel: ObservableObject {
     }
 
     static let defaultEventLogPath = "~/.codex-agent-monitor/events.jsonl"
+
+    private static func defaultRepositoryURL() -> URL {
+        let bundleURL = Bundle.main.bundleURL
+        if bundleURL.pathExtension == "app", bundleURL.deletingLastPathComponent().lastPathComponent == "dist" {
+            return bundleURL.deletingLastPathComponent().deletingLastPathComponent()
+        }
+        return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    }
 }
