@@ -254,14 +254,17 @@ struct CodexAgentMonitorTestRunner {
     private static func testLocalGitStatusProviderParsesLogLine() throws {
         let commit = LocalGitStatusProvider.parseLogLine(
             "a13f92c\u{1f}add token provider\u{1f}2026-06-05T12:30:00Z",
-            branch: "main"
+            branch: "main",
+            pushStatus: .pushed
         )
 
         try expect(commit?.shortHash == "a13f92c", "expected short hash")
         try expect(commit?.message == "add token provider", "expected message")
         try expect(commit?.branch == "main", "expected branch")
-        try expect(commit?.pushStatus == .unavailable, "expected unavailable push status")
+        try expect(commit?.pushStatus == .pushed, "expected pushed status")
         try expect(commit?.localCommitAt != nil, "expected commit date")
+        try expect(LocalGitStatusProvider.parsePushStatus(aheadBehindLine: "1\t0\n") == .unpushed, "expected unpushed status")
+        try expect(LocalGitStatusProvider.parsePushStatus(aheadBehindLine: "0\t2\n") == .pushed, "expected pushed status")
     }
 
     private static func testLocalSkillStatusProviderReadsRepoSkills() throws {

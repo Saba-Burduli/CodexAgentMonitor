@@ -10,6 +10,7 @@ public struct LocalGitStatusProvider: GitStatusProvider {
     public func recentGitActivity(limit: Int) throws -> [GitCommitStatus] {
         let safeLimit = max(1, min(limit, 10))
         let branch = try runGit(["rev-parse", "--abbrev-ref", "HEAD"]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let pushStatus = localPushStatus()
         let output = try runGit([
             "log",
             "-n", "\(safeLimit)",
@@ -19,10 +20,14 @@ public struct LocalGitStatusProvider: GitStatusProvider {
 
         return output
             .split(separator: "\n")
-            .compactMap { Self.parseLogLine(String($0), branch: branch) }
+            .compactMap { Self.parseLogLine(String($0), branch: branch, pushStatus: pushStatus) }
     }
 
-    public static func parseLogLine(_ line: String, branch: String) -> GitCommitStatus? {
+    public static func parseLogLine(
+        _ line: String,
+        branch: String,
+        pushStatus: PushStatus = .unavailable
+    ) -> GitCommitStatus? {
         let parts = line.split(separator: "\u{1f}", omittingEmptySubsequences: false)
         guard parts.count == 3 else { return nil }
 
@@ -32,8 +37,24 @@ public struct LocalGitStatusProvider: GitStatusProvider {
             branch: branch,
             pushedAt: nil,
             localCommitAt: ISO8601DateFormatter().date(from: String(parts[2])),
-            pushStatus: .unavailable
+            pushStatus: pushStatus
         )
+    }
+
+    public static func parsePushStatus(aheadBehindLine: String) -> PushStatus? {
+        let parts = aheadBehindLine.split(whereSeparator: \.isWhitespace)
+        guard parts.count >= 2, let ahead = Int(parts[0]) else { return nil }
+        return ahead > 0 ? .unpushed : .pushed
+    }
+
+    private func localPushStatus() -> PushStatus {
+        guard (try? runGit(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])) != nil else {
+            return .unavailable
+        }
+        guard let output = try? runGit(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"]) else {
+            return .unavailable
+        }
+        return Self.parsePushStatus(aheadBehindLine: output) ?? .unavailable
     }
 
     private func runGit(_ arguments: [String]) throws -> String {
