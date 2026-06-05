@@ -11,7 +11,7 @@ struct MonitorMenuView: View {
             DataSourceSummary(model: model)
 
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     switch model.tabs.selected {
                     case .overview:
                         OverviewTabView(model: model)
@@ -113,6 +113,7 @@ private struct OverviewTabView: View {
         let sessions = (try? adapter.sessions()) ?? []
         let selectedSessionId = effectiveSessionId(selected: model.selectedSessionId, sessions: sessions)
         let visibleAgents = selectedSessionId.map { id in agents.filter { $0.sessionId == id } } ?? agents
+        let visibleAgentRows = Array(prioritizedAgents(visibleAgents).prefix(8))
         let tokenStatus = (try? adapter.tokenStatus(for: selectedSessionId)) ?? nil
         let permissionStatus = (try? adapter.permissionStatus()) ?? PermissionStatus()
 
@@ -124,9 +125,12 @@ private struct OverviewTabView: View {
             if visibleAgents.isEmpty {
                 EmptyStateView(text: "No active Codex agents observed")
             } else {
-                VStack(spacing: 10) {
-                    ForEach(visibleAgents) { agent in
+                LazyVStack(spacing: 10) {
+                    ForEach(visibleAgentRows) { agent in
                         CodexAgentRow(agent: agent)
+                    }
+                    if visibleAgents.count > visibleAgentRows.count {
+                        EmptyStateView(text: "Showing \(visibleAgentRows.count) of \(visibleAgents.count) agents")
                     }
                 }
             }
@@ -165,10 +169,14 @@ private struct SessionPicker: View {
             EmptyStateView(text: "No Codex sessions available for switching")
         } else {
             Menu(selectedSessionTitle) {
-                ForEach(sessions) { session in
+                ForEach(Array(sessions.prefix(20))) { session in
                     Button(session.name ?? session.id) {
                         select(session.id)
                     }
+                }
+                if sessions.count > 20 {
+                    Divider()
+                    Text("Showing 20 of \(sessions.count)")
                 }
             }
             .accessibilityIdentifier("monitor.sessionPicker")
@@ -782,4 +790,13 @@ private func effectiveSessionId(selected: String?, sessions: [CodexSessionStatus
     return sessions.first(where: { session in
         session.agents.contains { $0.status.isActive }
     })?.id ?? sessions.first?.id
+}
+
+private func prioritizedAgents(_ agents: [CodexAgentStatus]) -> [CodexAgentStatus] {
+    agents.sorted { lhs, rhs in
+        if lhs.status.isActive != rhs.status.isActive {
+            return lhs.status.isActive
+        }
+        return lhs.updatedAt > rhs.updatedAt
+    }
 }
